@@ -13,3 +13,5 @@ Questo progetto è stato sviluppato da:
 • Copetti Camilla
 
 • Germenia Riccardo
+
+## Operazioni da effettuare per visualizzare ***le cose***
