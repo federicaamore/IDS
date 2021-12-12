@@ -1,33 +1,58 @@
 var Express = require("express");
 var bodyParser = require("body-parser");
 const db = require("better-sqlite3")("user_data.db")
+var os = require('fs');
 
 db.prepare('CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, \
     ultimo_invio text)').run()
 
 var app = Express();
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const { request, response } = require("express");
+
+//SETUP
+if (!os.existsSync("./uploads")){
+  os.mkdirSync("uploads")
+  os.writeFileSync("./uploads/photos.txt","0")
+}
 
 
 app.listen(49146, () => {
 });
 
 var fileUpload = require('express-fileupload');
-var fs = require('fs');
-app.use(fileUpload());
-app.use('/Photos', Express.static(__dirname + '/Photos'));
+
+app.use(fileUpload({
+  createParentPath: true
+}));
+//app.use('/upload/img', Express.static(__dirname + '/uploads'));
 
 
-var cors = require('cors')
+var cors = require('cors');
+const { json } = require("body-parser");
 app.use(cors())
+
+//API GENERALI
 
 app.get('/', (request, response) => {
     response.json('Hello World');
 })
 
+app.post('/upload/img', (request, response) => {
+  let image = request.files.image;
+  let data = os.readFileSync('./uploads/photos.txt').toString();
+  let image_name = data + "." + image.name.split(".").at(-1)
+  //Con mv sposto l'immagine nella cartella giusta
+  image.mv('./uploads/' + image_name);
+  os.writeFileSync("./uploads/photos.txt", (parseInt(data)+1).toString())
+
+  response.send(image_name)
+})
+
+//Inizio API SCHEDA
 
 app.get('/api/scheda', (request, response) => {
 
@@ -60,6 +85,7 @@ app.post('/api/scheda', (request, response) => {
 
       response.send("Scheda aggiunta")
 })
+
 
 
 app.put('/api/scheda', (request, response) => {
