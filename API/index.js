@@ -3,8 +3,11 @@ var bodyParser = require("body-parser");
 const db = require("better-sqlite3")("user_data.db")
 var os = require('fs');
 
-db.prepare('CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, \
-    ultimo_invio text)').run()
+
+sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
+        CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
+        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text)"
+db.exec(sql)
 
 var app = Express();
 
@@ -52,7 +55,7 @@ app.post('/upload/img', (request, response) => {
   response.send(image_name)
 })
 
-//Inizio API SCHEDA
+//API SCHEDA
 
 //Lista schede
 app.get('/api/scheda', (request, response) => {
@@ -85,16 +88,11 @@ app.post('/api/scheda', (request, response) => {
         }
       }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"], "0");
 
-      response.send("Scheda aggiunta")
+    response.send("Scheda aggiunta")
 })
 
 //rimozione scheda
 app.delete('/api/scheda/:id', (request, response) => {
-    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
-    row = db.prepare(sql).get(request.params.id)
-    if (row == undefined)
-        response.json("Scheda non presente")
-
     sql = "DELETE FROM schede WHERE id = ?"
     console.log(request.params)
     db.prepare(sql, function(err) {
@@ -104,3 +102,54 @@ app.delete('/api/scheda/:id', (request, response) => {
       }).run(request.params.id)
     response.json("Deleted Successfully");
 })
+
+//API MATERIA
+app.get('/api/materia/', (request, response) => {
+
+    sql = "SELECT * FROM materie"
+    row = db.prepare(sql, function(err){
+        if (err){
+            return console.log(err.message)
+        }
+    }).all()
+    if (row == undefined){
+        response.send("Nessuna materia presente")
+    }
+    else{
+        response.send(row)
+    }
+})
+
+app.post('/api/materia', (request, response) => {
+    sql = "INSERT INTO materie(name, R, G, B) VALUES(?, ?, ?, ?)"
+    try{
+        db.prepare(sql).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]);
+        response.json("Materia inserita")
+    }
+    catch (error){
+        console.log(error.message)
+        response.json(error.message)
+    }
+});
+
+app.put('/api/materia', (request, response) => {
+    sql = "REPLACE INTO materie(name, R, G, B) VALUES(?, ?, ?, ?)"
+    db.prepare(sql,
+        function(err) {
+        if (err) {
+            return console.log(err.message);
+        }
+    }).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]);
+    response.json("Materia aggiornata")
+});
+
+app.delete('/api/materia/:name', (request, response) => {
+    sql = "DELETE FROM materie WHERE name = ?"
+    db.prepare(sql, function(err) {
+        if (err) {
+          return console.log(err.message);
+        }
+      }).run(request.params.name)
+    response.json("Deleted Successfully");
+})
+
