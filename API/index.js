@@ -54,6 +54,7 @@ app.post('/upload/img', (request, response) => {
 
 //Inizio API SCHEDA
 
+//Lista schede
 app.get('/api/scheda', (request, response) => {
 
     sql = "SELECT * FROM schede ORDER BY id ASC"
@@ -66,6 +67,7 @@ app.get('/api/scheda', (request, response) => {
 
 })
 
+//Aggiunta scheda
 app.post('/api/scheda', (request, response) => {
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
     row = db.prepare(sql).get()
@@ -86,23 +88,12 @@ app.post('/api/scheda', (request, response) => {
       response.send("Scheda aggiunta")
 })
 
-
-
-app.put('/api/scheda', (request, response) => {
-
-    sql = "REPLACE INTO schede(id, percorso_immagine, contenuto, frequenza_invio_notifica, ultimo_invio) VALUES(?, ?, ?, ?, ?)"
-    db.prepare(sql,
-         function(err) {
-        if (err) {
-          return console.log(err.message);
-        }
-      }).run(request.body["id_scheda"], request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"], request.body["ultimo_invio"]);
-
-      response.send("Scheda aggiornata")
-})
-
-
-app.delete('/api/scheda/{id}', (request, response) => {
+//rimozione scheda
+app.delete('/api/scheda/:id', (request, response) => {
+    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
+    row = db.prepare(sql).get(request.params.id)
+    if (row == undefined)
+        response.json("Scheda non presente")
 
     sql = "DELETE FROM schede WHERE id = ?"
     console.log(request.params)
