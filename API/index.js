@@ -6,6 +6,7 @@ var os = require('fs');
 
 sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
         CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
+        CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
         CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text)"
 db.exec(sql)
 
@@ -112,7 +113,7 @@ app.get('/api/materia/', (request, response) => {
             return console.log(err.message)
         }
     }).all()
-    if (row == undefined){
+    if (row == undefined || Object.keys(row).length == 0){
         response.send("Nessuna materia presente")
     }
     else{
@@ -133,14 +134,20 @@ app.post('/api/materia', (request, response) => {
 });
 
 app.put('/api/materia', (request, response) => {
-    sql = "REPLACE INTO materie(name, R, G, B) VALUES(?, ?, ?, ?)"
-    db.prepare(sql,
-        function(err) {
-        if (err) {
-            return console.log(err.message);
+    let sql = "UPDATE cataloghi SET name = ?, R = ?, G = ?, B = ? WHERE name = ?"
+    try{
+        let info = db.prepare(sql).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]. request.body["old_name"],);
+        if (info.changes == 0){
+            response.json("Materia non presente")
         }
-    }).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]);
-    response.json("Materia aggiornata")
+        else{
+            response.json("Materia aggiornata")
+        }
+    }
+    catch (error){
+        console.log(error.message)
+        response.json(error.message)
+    }
 });
 
 app.delete('/api/materia/:name', (request, response) => {
@@ -153,3 +160,80 @@ app.delete('/api/materia/:name', (request, response) => {
     response.json("Deleted Successfully");
 })
 
+//API CATALOGHI
+app.get('/api/catalogo/', (request, response) => {
+
+    sql = "SELECT * FROM cataloghi"
+    row = db.prepare(sql, function(err){
+        if (err){
+            return console.log(err.message)
+        }
+    }).all()
+    if (row == undefined || Object.keys(row).length == 0){
+        response.send("Nessun catalogo presente")
+    }
+    else{
+        response.send(row)
+    }
+})
+
+app.post('/api/catalogo', (request, response) => {
+    let materia = request.body["materia"]
+    let sql = "SELECT name FROM materie"
+    let materie = db.prepare(sql).all()
+    if (materie == undefined || Object.keys(materie).length == 0){
+        response.send("Nessuna materia presente")
+    }
+    let found = false
+    for (i = 0; i < Object.keys(materie).length && found == false; i++){
+        if (materia == materie[i].name){
+            found = true
+        }
+    }
+    if (!found){
+        response.send("Nessuna materia presente con quel nome")
+        return
+    }
+    sql = "INSERT INTO cataloghi(name, materia) VALUES(?, ?)"
+    try{
+        db.prepare(sql).run(request.body["name"], materia);
+        response.json("Catalogo creato")
+    }
+    catch (error){
+        console.log(error.message)
+        response.json(error.message)
+    }
+});
+
+app.put('/api/catalogo', (request, response) => {
+    let materia = request.body["materia"]
+    let sql = "SELECT name FROM materie"
+    let materie = db.prepare(sql).all()
+    if (materie == undefined || Object.keys(materie).length == 0){
+        response.send("Nessuna materia presente")
+    }
+    let found = false
+    for (i = 0; i < Object.keys(materie).length && found == false; i++){
+        if (materia == materie[i].name){
+            found = true
+        }
+    }
+    if (!found){
+        response.send("Nessuna materia presente con quel nome")
+        return
+    }
+    sql = "UPDATE cataloghi SET name = ?, materia = ? WHERE name = ?"
+    try{
+        let info = db.prepare(sql).run(request.body["name"], materia, request.body["old_name"]);
+        if (info.changes == 0){
+            response.json("Catalogo non presente")
+        }
+        else{
+            response.json("Catalogo aggiornato")
+        }
+    }
+    catch (error){
+        console.log(error.message)
+        response.json(error.message)
+    }
+});
