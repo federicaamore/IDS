@@ -87,6 +87,27 @@ function insertEvent(auth, data){
   );
 }
 
+function updateEvent(auth, data){
+    const calendar = google.calendar({version: 'v3', auth});
+    calendar.events.update(
+    {
+      auth: auth,
+      eventId: data[0],
+      calendarId: CALENDAR_ID,
+      resource: data[1]
+    },
+    function(err, event) {
+      if (err) {
+        console.log('There was an error contacting the Calendar service: ' + err);
+        return;
+      }
+      data[2].prepare("UPDATE eventi SET materia = ? WHERE id = ?").run(data[3], data[0])
+      console.log('Event created:', event.data.id);
+      data[4].send("Evento aggiornato " + event.data.id)
+    }
+  );
+}
+
 function deleteEvent(auth, data){
   const calendar = google.calendar({version: 'v3', auth});
   calendar.events.delete({
@@ -132,4 +153,4 @@ function listEvents(auth, event) {
   });
 }
 
-module.exports = {authorize, insertEvent, deleteEvent}
+module.exports = {authorize, insertEvent, deleteEvent, updateEvent}

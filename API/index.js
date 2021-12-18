@@ -243,31 +243,49 @@ app.put('/api/catalogo', (request, response) => {
 
 //API EVENTI
 app.post('/api/evento', (request, response) => {
-    title = request.body["title"]
-    description = request.body["description"]
-    start = request.body["start"]
-    end = request.body["end"]
-    frequency = request.body["frequency"]
     timezone = request.body["timezone"]
     materia = request.body["materia"]
     var event = {
-        summary: title,
-        description: description,
+        summary: request.body["title"],
+        description: request.body["description"],
         start: {
-          dateTime: start,
+          dateTime: request.body["start"],
           timeZone: timezone
         },
         end: {
-          dateTime: end,
+          dateTime: request.body["end"],
           timeZone: timezone
         },
-        recurrence: ['RRULE:FREQ=DAILY;COUNT='+frequency],
+        recurrence: ['RRULE:FREQ=DAILY;COUNT='+request.body["frequency"]],
       };
     var data = [event, db, materia, response]
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err);
-        // Authorize a client with credentials, then call the Google Calendar API.
         google_api.authorize(JSON.parse(content), data, google_api.insertEvent);
+        });
+});
+
+app.put("/api/evento", (request, response) => {
+    id = request.body["id"]
+    timezone = request.body["timezone"]
+    materia = request.body["materia"]
+    var event = {
+        summary: request.body["title"],
+        description: request.body["description"],
+        start: {
+          dateTime: request.body["start"],
+          timeZone: timezone
+        },
+        end: {
+          dateTime: request.body["end"],
+          timeZone: timezone
+        },
+        recurrence: ['RRULE:FREQ=DAILY;COUNT='+request.body["frequency"]],
+      };
+    var data = [id, event, db, materia, response]
+    fs.readFile('credentials.json', (err, content) => {
+        if (err) return console.log('Error loading client secret file:', err);
+        google_api.authorize(JSON.parse(content), data, google_api.updateEvent);
         });
 });
 
@@ -276,7 +294,6 @@ app.delete("/api/evento/:id", (request, response) => {
     data = [id, db, response]
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err);
-        // Authorize a client with credentials, then call the Google Calendar API.
         google_api.authorize(JSON.parse(content), data, google_api.deleteEvent);
         });
 });
