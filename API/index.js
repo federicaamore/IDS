@@ -1,8 +1,8 @@
 var Express = require("express");
 var bodyParser = require("body-parser");
 const db = require("better-sqlite3")("user_data.db")
-var os = require('fs');
-
+var fs = require('fs');
+const google_api = require('./api_google.js');
 
 sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
         CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
@@ -18,9 +18,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const { request, response } = require("express");
 
 //SETUP
-if (!os.existsSync("./uploads")){
-  os.mkdirSync("uploads")
-  os.writeFileSync("./uploads/photos.txt","0")
+if (!fs.existsSync("./uploads")){
+  fs.mkdirSync("uploads")
+  fs.writeFileSync("./uploads/photos.txt","0")
 }
 
 
@@ -42,16 +42,17 @@ app.use(cors())
 //API GENERALI
 
 app.get('/', (request, response) => {
+    console.log(request)
     response.json('Hello World');
 })
 
 app.post('/upload/img', (request, response) => {
   let image = request.files.image;
-  let data = os.readFileSync('./uploads/photos.txt').toString();
+  let data = fs.readFileSync('./uploads/photos.txt').toString();
   let image_name = data + "." + image.name.split(".").at(-1)
   //Con mv sposto l'immagine nella cartella giusta
   image.mv('./uploads/' + image_name);
-  os.writeFileSync("./uploads/photos.txt", (parseInt(data)+1).toString())
+  fs.writeFileSync("./uploads/photos.txt", (parseInt(data)+1).toString())
 
   response.send(image_name)
 })
@@ -237,3 +238,33 @@ app.put('/api/catalogo', (request, response) => {
         response.json(error.message)
     }
 });
+
+
+//API EVENTI
+app.post('/api/evento', (request, response) => {
+    title = request.body["title"]
+    description = request.body["description"]
+    start = request.body["start"]
+    end = request.body["end"]
+    frequency = request.body["frequency"]
+    timezone = request.body["timezone"]
+    var event = {
+        summary: title,
+        description: description,
+        start: {
+          dateTime: start,
+          timeZone: timezone
+        },
+        end: {
+          dateTime: end,
+          timeZone: timezone
+        },
+        recurrence: ['RRULE:FREQ=DAILY;COUNT='+frequency],
+      };
+    fs.readFile('credentials.json', (err, content) => {
+        if (err) return console.log('Error loading client secret file:', err);
+        // Authorize a client with credentials, then call the Google Calendar API.
+        google_api.authorize(JSON.parse(content), event, google_api.insertEvent);
+        });
+});
+
