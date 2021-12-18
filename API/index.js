@@ -7,7 +7,8 @@ const google_api = require('./api_google.js');
 sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
         CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
         CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
-        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text)"
+        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text);\
+        CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
 db.exec(sql)
 
 var app = Express();
@@ -248,6 +249,7 @@ app.post('/api/evento', (request, response) => {
     end = request.body["end"]
     frequency = request.body["frequency"]
     timezone = request.body["timezone"]
+    materia = request.body["materia"]
     var event = {
         summary: title,
         description: description,
@@ -261,10 +263,21 @@ app.post('/api/evento', (request, response) => {
         },
         recurrence: ['RRULE:FREQ=DAILY;COUNT='+frequency],
       };
+    var data = [event, db, materia, response]
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err);
         // Authorize a client with credentials, then call the Google Calendar API.
-        google_api.authorize(JSON.parse(content), event, google_api.insertEvent);
+        google_api.authorize(JSON.parse(content), data, google_api.insertEvent);
+        });
+});
+
+app.delete("/api/evento/:id", (request, response) => {
+    id = request.params.id
+    data = [id, db, response]
+    fs.readFile('credentials.json', (err, content) => {
+        if (err) return console.log('Error loading client secret file:', err);
+        // Authorize a client with credentials, then call the Google Calendar API.
+        google_api.authorize(JSON.parse(content), data, google_api.deleteEvent);
         });
 });
 

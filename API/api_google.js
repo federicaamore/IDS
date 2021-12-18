@@ -3,6 +3,7 @@ const readline = require('readline');
 const {google} = require('googleapis');
 const { auth } = require('google-auth-library');
 const { NONAME } = require('dns');
+const { response } = require('express');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar',
@@ -12,13 +13,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar',
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = 'token.json';
-
-// Load client secrets from a local file.
-content = fs.readFile('credentials.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
-  // Authorize a client with credentials, then call the Google Calendar API.
-  authorize(JSON.parse(content), {}, listEvents);
-});
+const CALENDAR_ID = "ksoct8ono2cem4gkdvdnl4af0g@group.calendar.google.com"
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -71,24 +66,43 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
-function insertEvent(auth, event){
+function insertEvent(auth, data){
     const calendar = google.calendar({version: 'v3', auth});
     calendar.events.insert(
     {
       auth: auth,
-      calendarId: 'ksoct8ono2cem4gkdvdnl4af0g@group.calendar.google.com',
-      resource: event
+      calendarId: CALENDAR_ID,
+      resource: data[0]
     },
     function(err, event) {
       if (err) {
-        console.log(
-          'There was an error contacting the Calendar service: ' + err
-        );
+        console.log('There was an error contacting the Calendar service: ' + err);
         return;
       }
-      console.log('Event created:', event);
+      
+      console.log('Event created:', event.data.id);
+      data[1].prepare("INSERT INTO eventi(id, materia) VALUES(?, ?)").run(event.data.id, data[2])
+      data[3].send("Evento aggiunto " + event.data.id)
     }
   );
+}
+
+function deleteEvent(auth, data){
+  const calendar = google.calendar({version: 'v3', auth});
+  calendar.events.delete({
+    auth: auth,
+    calendarId: CALENDAR_ID,
+    eventId: data[0]
+  }, function(err,event) {
+    if (err){
+      console.log('There was an error contacting the Calendar service: ' + err)
+      data[2].send(err.message)
+      return
+    }
+    console.log(event)
+    data[1].prepare("DELETE FROM eventi WHERE id = ?").run(data[0])
+    data[2].send("Evento rimosso con id: " + data[0])
+})
 }
 /**
  * Lists the next 10 events on the user's primary calendar.
@@ -98,7 +112,7 @@ function insertEvent(auth, event){
 function listEvents(auth, event) {
   const calendar = google.calendar({version: 'v3', auth});
   calendar.events.list({
-    calendarId: 'ksoct8ono2cem4gkdvdnl4af0g@group.calendar.google.com',
+    calendarId: CALENDAR_ID,
     timeMin: (new Date()).toISOString(),
     maxResults: 10,
     singleEvents: true,
@@ -118,4 +132,4 @@ function listEvents(auth, event) {
   });
 }
 
-module.exports = {authorize, insertEvent}
+module.exports = {authorize, insertEvent, deleteEvent}
