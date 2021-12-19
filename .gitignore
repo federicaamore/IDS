@@ -1,2 +1,4 @@
 *.db
 uploads/
+credentials.json
+token.json
