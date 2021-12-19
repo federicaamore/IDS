@@ -439,9 +439,11 @@ app.delete('/api/materia/:nome', (request, response) => {
     row = db.prepare(sql).get(request.params.nome)
     if (row == undefined)
         response.status(404).send("Nessuna materia presente con il nome indicato")
-    sql = "DELETE FROM materie WHERE name = ?"
-    db.prepare(sql).run(request.params.name)
-    response.json("Rimosso con successo");
+    else{
+        sql = "DELETE FROM materie WHERE name = ?"
+        db.prepare(sql).run(request.params.name)
+        response.json("Rimosso con successo");
+    }
 })
 
 /**
@@ -610,6 +612,36 @@ app.put('/api/catalogo', (request, response) => {
         response.status(500).json("Eccezione non gestita")
     }
 });
+
+/**
+ * @swagger
+ * /api/catalogo/{nome}:
+ *   delete:
+ *     summary: Elimina un catalogo.
+ *     parameters:
+ *       - in: path
+ *         name: nome
+ *         schema:
+ *             type: string
+ *         required: true
+ *         description: nome del catalogo da rimuovere
+ *     responses:
+ *       200:
+ *         description: Rimosso con successo
+ *       404:
+ *         description: Nessun catalogo presente con il nome indicato
+*/
+app.delete('/api/catalogo/:nome', (request, response) => {
+    sql = "SELECT name FROM cataloghi WHERE name = ?;"
+    row = db.prepare(sql).get(request.params.nome)
+    if (row == undefined)
+        response.status(404).send("Nessun catalogo presente con il nome indicato")
+    else{
+        sql = "DELETE FROM cataloghi WHERE name = ?"
+        db.prepare(sql).run(request.params.name)
+        response.json("Rimosso con successo");
+    }
+})
 
 
 //API EVENTI
