@@ -54,7 +54,7 @@ if (!fs.existsSync("./uploads")){
 sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
         CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
         CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
-        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text);\
+        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, nome text, percorso_file text, catalogo text);\
         CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
 db.exec(sql)
 
@@ -97,7 +97,7 @@ app.post('/upload/img', (request, response) => {
  * /api/scheda:
  *   get:
  *     summary: Restituisce la lista delle schede di memoria.
- *     description: Restituisce una lista contente tutte le schede di memoria salvate dall'utente all'interno dell'applicazione.
+ *     description: Restituisce una lista contenente tutte le schede di memoria salvate dall'utente all'interno dell'applicazione.
  *     responses:
  *       200:
  *         description: Una lista di schede.
@@ -245,7 +245,7 @@ app.delete('/api/scheda/:id', (request, response) => {
  * /api/materia:
  *   get:
  *     summary: Restituisce la lista delle materie.
- *     description: Restituisce una lista contente tutte le materie.
+ *     description: Restituisce una lista contenente tutte le materie.
  *     responses:
  *       200:
  *         description: Una lista di materie.
@@ -451,7 +451,7 @@ app.delete('/api/materia/:nome', (request, response) => {
  * /api/catalogo:
  *   get:
  *     summary: Restituisce la lista dei cataloghi.
- *     description: Restituisce una lista contente tutti i cataloghi.
+ *     description: Restituisce una lista contenente tutti i cataloghi.
  *     responses:
  *       200:
  *         description: Una lista di cataloghi con la rispettiva materia.
@@ -573,8 +573,8 @@ app.post('/api/catalogo', (request, response) => {
  *                  description: Nome attuale del catalogo.
  *                  example: Appunti di novembre
  *     responses:
- *       201:
- *         description: Catalogo inserito
+ *       200:
+ *         description: Catalogo aggiornato
  *       404:
  *         description: Nessuna materia presente con quel nome<br />
  *                      Nessuna catalogo presente con quel nome
@@ -641,6 +641,201 @@ app.delete('/api/catalogo/:nome', (request, response) => {
         db.prepare(sql).run(request.params.name)
         response.json("Rimosso con successo");
     }
+})
+
+/**
+ * @swagger
+ * /api/nota/{catalogo}:
+ *   get:
+ *     summary: Restituisce la lista delle note in un catalogo.
+ *     description: Restituisce una lista contenente tutte le note che l'utente ha inserito in un catalogo.
+ *     parameters:
+ *       - in: path
+ *         name: catalogo
+ *         schema:
+ *             type: string
+ *         required: true
+ *         description: nome del catalogo del quale elencare le note
+ *     responses:
+ *       200:
+ *         description: Una lista di note.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: Id della scheda di memoria.
+ *                         example: 2
+ *                       nome:
+ *                         type: string
+ *                         description: Il nome della nota. Di default è il percorso del file
+ *                         example: /uploads/1.txt
+ *                       percorso_file:
+ *                         type: string
+ *                         description: Il percorso dove è salvato il file collegato a questa nota
+ *                         example: /uploads/1.txt
+ *                       catalogo:
+ *                          type: string
+ *                          description: Il catalogo alla quale la scheda appartiene.
+ *                          example: Appunti di novembre.
+ *       404:
+ *         description: Nessuna scheda presente nel catalogo.<br />
+ *                      Nessun catalogo presente con il nome indicato
+ */
+ app.get('/api/nota/:catalogo', (request, response) => {
+
+    sql = "SELECT name FROM cataloghi WHERE name = ?;"
+    row = db.prepare(sql).get(request.params.catalogo)
+    if (row == undefined){
+        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        return
+    }
+    sql = "SELECT * FROM note WHERE catalogo = ? ORDER BY id ASC"
+    rows = db.prepare(sql).all(request.params.catalogo)
+    if (row == undefined || Object.keys(row).length == 0){
+        response.status(404).json("Nessuna scheda presente nel catalogo")
+    }
+    else{
+        response.send(row)
+    }
+})
+/**
+ * @swagger
+ * /api/nota:
+ *   post:
+ *     summary: Aggiunge una nota ad un catalogo.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               percorso_file:
+ *                  type: string
+ *                  nullable: true
+ *                  description: Il percorso dove è salvato il file collegato a questa nota.
+ *                  example: /uploads/1.txt
+ *               catalogo:
+ *                  type: string
+ *                  description: Il catalogo nel quale va inserita la nota
+ *                  example: Appunti di novembre
+ *     responses:
+ *       201:
+ *         description: Nota aggiunta con id x
+ *       404:
+ *         description: Nessun catalogo presente con il nome indicato
+*/
+app.post('/api/nota', (request, response) => {
+    sql = "SELECT name FROM cataloghi WHERE name = ?;"
+    row = db.prepare(sql).get(request.params.catalogo)
+    if (row == undefined){
+        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        return
+    }
+    sql = "SELECT id FROM note ORDER BY id DESC LIMIT 1;"
+    row = db.prepare(sql).get()
+    if (row == undefined) 
+        id = -1
+    else
+        id = row.id;
+    id = id + 1
+    console.log(id)
+    sql = "INSERT INTO note(id, nome, percorso_file, catalogo) VALUES(?, ?, ?, ?)"
+    db.prepare(sql).run(id, request.body["percorso_file"], request.body["percorso_file"], request.body["catalogo"]);
+
+    response.status(201).json("Nota aggiunta con id "+id)
+})
+
+/**
+ * @swagger
+ * /api/nota:
+ *   put:
+ *     summary: Aggiorna una una nota.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                  type: string
+ *                  description: Nuovo nome della nota.
+ *                  example: definizione addizione
+ *               id:
+ *                  type: integer
+ *                  description: id della nota da aggiornare
+ *                  example: 0
+ *               catalogo:
+ *                  type: string
+ *                  description: Il catalogo nel quale si trova la nota da modificare.
+ *                  example: Appunti di novembre
+ *     responses:
+ *       201:
+ *         description: Nota aggiornata
+ *       404:
+ *         description: Nessuna nota presente con quel nome
+ *       409:
+ *         description: Esiste già una nota con il nuovo nome
+ *       500:
+ *         description: Eccezione non gestita
+*/
+app.put('/api/nota', (request, response) => {
+    sql = "UPDATE note SET name = ? WHERE name = ? AND catalogo = ?"
+    try{
+        let info = db.prepare(sql).run(request.body["nome"], request.body["id"], request.body["catalogo"]);
+        if (info.changes == 0){
+            response.status(404).json("Nessuna nota presente con quell'id nel catalogo indicato")
+        }
+        else{
+            response.json("Nota aggiornata")
+        }
+    }
+    catch (error){
+        console.log(error.message)
+        response.status(500).json("Eccezione non gestita")
+    }
+});
+
+// TODO FINIRE API nota
+/**
+ * @swagger
+ * /api/nota/{id}:
+ *   delete:
+ *     summary: Rimuove una nota dal catalogo.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *             type: integer
+ *         required: true
+ *         description: id della scheda da rimuovere
+ *     responses:
+ *       200:
+ *         description: Rimosso con successo
+ *       404:
+ *         description: Nessuna scheda presente con l'id indicato
+*/
+app.delete('/api/scheda/:id', (request, response) => {
+    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
+    row = db.prepare(sql).get(request.params.id)
+    if (row == undefined)
+        response.status(404).send("Nessuna scheda presente con l'id indicato")
+    sql = "DELETE FROM schede WHERE id = ?"
+    db.prepare(sql, function(err) {
+        if (err) {
+          console.log(err.message);
+        }
+      }).run(request.params.id)
+    response.json("Rimosso con successo");
 })
 
 
