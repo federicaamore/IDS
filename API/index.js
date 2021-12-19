@@ -134,6 +134,8 @@ app.post('/upload/img', (request, response) => {
  *                          nullable: true 
  *                          description: La data e l'ora dell'ultimo invio della notifica con i dati della scheda.
  *                          example: 2019-09-26T07:58:30.996+0200
+ *       404:
+ *         description: Nessuna scheda presente.
  */
 app.get('/api/scheda', (request, response) => {
 
@@ -143,8 +145,12 @@ app.get('/api/scheda', (request, response) => {
             return console.log(err.message)
         }
     }).all()
-    response.send(rows)
-
+    if (row == undefined || Object.keys(row).length == 0){
+        response.status(404).json("Nessuna scheda presente")
+    }
+    else{
+        response.send(row)
+    }
 })
 
 /**
@@ -180,7 +186,7 @@ app.get('/api/scheda', (request, response) => {
  *                  example: 2019-09-26T07:58:30.996+0200
  *     responses:
  *       201:
- *         description: Scheda aggiunta con id: x
+ *         description: Scheda aggiunta con id x
 */
 app.post('/api/scheda', (request, response) => {
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
@@ -199,7 +205,7 @@ app.post('/api/scheda', (request, response) => {
         }
       }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
 
-    response.status(201).json("Scheda aggiunta con id: "+id)
+    response.status(201).json("Scheda aggiunta con id "+id)
 })
 
 /**
@@ -234,6 +240,44 @@ app.delete('/api/scheda/:id', (request, response) => {
     response.json("Rimosso con successo");
 })
 
+/**
+ * @swagger
+ * /api/materia:
+ *   get:
+ *     summary: Restituisce la lista delle materie.
+ *     description: Restituisce una lista contente tutte le materie.
+ *     responses:
+ *       200:
+ *         description: Una lista di materie.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       materia:
+ *                         type: string
+ *                         description: Nome della materia da salvare.
+ *                         example: Ingegneria del software
+ *                       R:
+ *                         type: int
+ *                         description: Il valore Red per definire un colore secondo il modello RGB
+ *                         example: 34
+ *                       G:
+ *                         type: int
+ *                         description: Il valore Green per definire un colore secondo il modello RGB
+ *                         example: 34
+ *                       B:
+ *                         type: int
+ *                         description: Il valore Blue per definire un colore secondo il modello RGB
+ *                         example: 34
+ *       404:
+ *         description: Nessuna materia presente.
+ */
 app.get('/api/materia/', (request, response) => {
 
     sql = "SELECT * FROM materie"
@@ -250,24 +294,102 @@ app.get('/api/materia/', (request, response) => {
     }
 })
 
+/**
+ * @swagger
+ * /api/materia:
+ *   post:
+ *     summary: Crea una materia.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                  type: string
+ *                  description: Nome della materia da salvare.
+ *                  example: Ingegneria del software
+ *               R:
+ *                  type: int
+ *                  description: Il valore Red per definire un colore secondo il modello RGB
+ *                  example: 34
+ *               G:
+ *                  type: int
+ *                  description: Il valore Green per definire un colore secondo il modello RGB
+ *                  example: 34
+ *               B:
+ *                  type: int
+ *                  description: Il valore Blue per definire un colore secondo il modello RGB
+ *                  example: 34
+ *     responses:
+ *       201:
+ *         description: Materia inserita
+ *       409:
+ *         description: Esiste già una materia con questo nome
+ *       500:
+ *         description: Eccezione non gestita
+*/
 app.post('/api/materia', (request, response) => {
     sql = "INSERT INTO materie(name, R, G, B) VALUES(?, ?, ?, ?)"
     try{
-        db.prepare(sql).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]);
-        response.json("Materia inserita")
+        db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"]);
+        response.status(201).json("Materia inserita")
     }
     catch (error){
-        console.log(error.message)
-        response.json(error.message)
+        if (error.message.startsWith("UNIQUE constraint failed: ")){
+            response.status(409).json("Esiste già una materia con questo nome")
+        }
+        else{
+            response.status(500).json(error.name)
+        }
     }
 });
 
+/**
+ * @swagger
+ * /api/materia:
+ *   put:
+ *     summary: Aggiorna una materia.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                  type: string
+ *                  description: Nuovo nome della materia da aggiornare.
+ *                  example: Ingegneria del software 2
+ *               R:
+ *                  type: int
+ *                  description: Nuovo valore Red per definire un colore secondo il modello RGB
+ *                  example: 34
+ *               G:
+ *                  type: int
+ *                  description: Nuovo valore Green per definire un colore secondo il modello RGB
+ *                  example: 36
+ *               B:
+ *                  type: int
+ *                  description: Nuovo valore Blue per definire un colore secondo il modello RGB
+ *                  example: 34
+ *               nome_attuale:
+ *                  type: string
+ *                  description: Nome attuale della materia da modificare.
+ *                  example: Ingegneria del software
+ *     responses:
+ *       201:
+ *         description: Materia inserita
+ *       404:
+ *         description: Materia non presente
+*/
 app.put('/api/materia', (request, response) => {
-    let sql = "UPDATE cataloghi SET name = ?, R = ?, G = ?, B = ? WHERE name = ?"
+    let sql = "UPDATE materie SET name = ?, R = ?, G = ?, B = ? WHERE name = ?"
     try{
-        let info = db.prepare(sql).run(request.body["name"], request.body["R"], request.body["G"], request.body["B"]. request.body["old_name"],);
+        let info = db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"]. request.body["nome_attuale"],);
         if (info.changes == 0){
-            response.json("Materia non presente")
+            response.status(404).json("Materia non presente")
         }
         else{
             response.json("Materia aggiornata")
@@ -275,18 +397,36 @@ app.put('/api/materia', (request, response) => {
     }
     catch (error){
         console.log(error.message)
-        response.json(error.message)
+        response.status(500).json(error.message)
     }
 });
 
-app.delete('/api/materia/:name', (request, response) => {
+/**
+ * @swagger
+ * /api/materia/{nome}:
+ *   delete:
+ *     summary: Rimuove una materia.
+ *     parameters:
+ *       - in: path
+ *         name: nome
+ *         schema:
+ *             type: string
+ *         required: true
+ *         description: nome della materia da rimuovere
+ *     responses:
+ *       200:
+ *         description: Rimosso con successo
+ *       404:
+ *         description: Nessuna materia presente con il nome indicato
+*/
+app.delete('/api/materia/:nome', (request, response) => {
+    sql = "SELECT name FROM materie WHERE name = ?;"
+    row = db.prepare(sql).get(request.params.nome)
+    if (row == undefined)
+        response.status(404).send("Nessuna materia presente con il nome indicato")
     sql = "DELETE FROM materie WHERE name = ?"
-    db.prepare(sql, function(err) {
-        if (err) {
-          return console.log(err.message);
-        }
-      }).run(request.params.name)
-    response.json("Deleted Successfully");
+    db.prepare(sql).run(request.params.name)
+    response.json("Rimosso con successo");
 })
 
 //API CATALOGHI
