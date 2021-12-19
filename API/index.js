@@ -4,14 +4,41 @@ const db = require("better-sqlite3")("user_data.db")
 var fs = require('fs');
 const google_api = require('./api_google.js');
 
-sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
-        CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
-        CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
-        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text);\
-        CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
-db.exec(sql)
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 var app = Express();
+
+const swaggerOptions = {
+    swaggerDefinition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Express API for My Project',
+            version: '1.0.0',
+            description:
+                'This is a REST API application made with Express.',
+            license: {
+                name: 'Licensed Under MIT',
+                url: 'https://spdx.org/licenses/MIT.html',
+            },
+            contact: {
+                name: 'Group40',
+                url: 'http://localhost:49146/',
+            },
+        },
+        servers: [
+            {
+                url: 'http://localhost:49146/',
+                description: 'Development server',
+            },
+        ],
+    },
+    apis: ["index.js"]
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -24,8 +51,15 @@ if (!fs.existsSync("./uploads")){
   fs.writeFileSync("./uploads/photos.txt","0")
 }
 
+sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
+        CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
+        CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
+        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, percorso_file text, catalogo text);\
+        CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
+db.exec(sql)
 
 app.listen(49146, () => {
+    console.log("API started...")
 });
 
 var fileUpload = require('express-fileupload');
@@ -58,9 +92,49 @@ app.post('/upload/img', (request, response) => {
   response.send(image_name)
 })
 
-//API SCHEDA
-
-//Lista schede
+/**
+ * @swagger
+ * /api/scheda:
+ *   get:
+ *     summary: Restituisce la lista delle schede di memoria.
+ *     description: Restituisce una lista contente tutte le schede di memoria salvate dall'utente all'interno dell'applicazione.
+ *     responses:
+ *       200:
+ *         description: Una lista di schede.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: Id della scheda di memoria.
+ *                         example: 2
+ *                       percorso_immagine:
+ *                         type: string
+ *                         nullable: true
+ *                         description: Il percorso dove è salvata l'immagine collegata a questa scheda, null se non viene scelta nessuna immagine.
+ *                         example: /uploads/1.jpg
+ *                       contenuto :
+ *                          type: string
+ *                          nullable: true 
+ *                          description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
+ *                          example: Il "+" indica l'operazione di addizione.
+ *                       frequenza_invio_notifica :
+ *                          type: integer
+ *                          description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
+ *                          example: 5.
+ *                       ultimo_invio :
+ *                          type: string
+ *                          nullable: true 
+ *                          description: La data e l'ora dell'ultimo invio della notifica con i dati della scheda.
+ *                          example: 2019-09-26T07:58:30.996+0200
+ */
 app.get('/api/scheda', (request, response) => {
 
     sql = "SELECT * FROM schede ORDER BY id ASC"
@@ -73,7 +147,41 @@ app.get('/api/scheda', (request, response) => {
 
 })
 
-//Aggiunta scheda
+/**
+ * @swagger
+ * /api/scheda:
+ *   post:
+ *     summary: Crea una scheda di memoria.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               percorso_immagine:
+ *                  type: string
+ *                  nullable: true
+ *                  description: Il percorso dove è salvata l'immagine collegata a questa scheda, null se non viene scelta nessuna immagine.
+ *                  example: /uploads/1.jpg
+ *               contenuto :
+ *                  type: string
+ *                  nullable: true 
+ *                  description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
+ *                  example: Il "+" indica l'operazione di addizione.
+ *               frequenza_invio_notifica :
+ *                  type: integer
+ *                  description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
+ *                  example: 5.
+ *               ultimo_invio :
+ *                  type: string
+ *                  nullable: true 
+ *                  description: La data e l'ora dell'ultimo invio della notifica con i dati della scheda.
+ *                  example: 2019-09-26T07:58:30.996+0200
+ *     responses:
+ *       201:
+ *         description: Scheda aggiunta con id: x
+*/
 app.post('/api/scheda', (request, response) => {
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
     row = db.prepare(sql).get()
@@ -83,30 +191,49 @@ app.post('/api/scheda', (request, response) => {
         id = row.id;
     id = id + 1
     console.log(id)
-    sql = "INSERT INTO schede(id, percorso_immagine, contenuto, frequenza_invio_notifica, ultimo_invio) VALUES(?, ?, ?, ?, ?)"
+    sql = "INSERT INTO schede(id, percorso_immagine, contenuto, frequenza_invio_notifica) VALUES(?, ?, ?, ?)"
     db.prepare(sql,
          function(err) {
         if (err) {
           return console.log(err.message);
         }
-      }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"], "0");
+      }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
 
-    response.send("Scheda aggiunta")
+    response.status(201).json("Scheda aggiunta con id: "+id)
 })
 
-//rimozione scheda
+/**
+ * @swagger
+ * /api/scheda/{id}:
+ *   delete:
+ *     summary: Rimuove una scheda di memoria.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *             type: integer
+ *         required: true
+ *         description: id della scheda da rimuovere
+ *     responses:
+ *       200:
+ *         description: Rimosso con successo
+ *       404:
+ *         description: Nessuna scheda presente con l'id indicato
+*/
 app.delete('/api/scheda/:id', (request, response) => {
+    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
+    row = db.prepare(sql).get(request.params.id)
+    if (row == undefined)
+        response.status(404).send("Nessuna scheda presente con l'id indicato")
     sql = "DELETE FROM schede WHERE id = ?"
-    console.log(request.params)
     db.prepare(sql, function(err) {
         if (err) {
-          return console.log(err.message);
+          console.log(err.message);
         }
       }).run(request.params.id)
-    response.json("Deleted Successfully");
+    response.json("Rimosso con successo");
 })
 
-//API MATERIA
 app.get('/api/materia/', (request, response) => {
 
     sql = "SELECT * FROM materie"
@@ -116,7 +243,7 @@ app.get('/api/materia/', (request, response) => {
         }
     }).all()
     if (row == undefined || Object.keys(row).length == 0){
-        response.send("Nessuna materia presente")
+        response.status(404).json("Nessuna materia presente")
     }
     else{
         response.send(row)
