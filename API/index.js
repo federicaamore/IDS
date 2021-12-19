@@ -261,7 +261,7 @@ app.delete('/api/scheda/:id', (request, response) => {
  *                     properties:
  *                       materia:
  *                         type: string
- *                         description: Nome della materia da salvare.
+ *                         description: Nome della materia.
  *                         example: Ingegneria del software
  *                       R:
  *                         type: int
@@ -383,16 +383,31 @@ app.post('/api/materia', (request, response) => {
  *         description: Materia inserita
  *       404:
  *         description: Materia non presente
+ *       409:
+ *         description: Esista già una materia con questo nome
+ *       500:
+ *         description: Eccezione non gestita
 */
 app.put('/api/materia', (request, response) => {
     let sql = "UPDATE materie SET name = ?, R = ?, G = ?, B = ? WHERE name = ?"
     try{
-        let info = db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"]. request.body["nome_attuale"],);
-        if (info.changes == 0){
-            response.status(404).json("Materia non presente")
+        try{
+            let info = db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"]. request.body["nome_attuale"],);
+            if (info.changes == 0){
+                response.status(404).json("Materia non presente")
+            }
+            else{
+                response.json("Materia aggiornata")
+            }
         }
-        else{
-            response.json("Materia aggiornata")
+        catch (error){
+            if (error.message.startsWith("UNIQUE constraint failed: ")){
+                response.status(409).json("Esiste già una materia con questo nome")
+            }
+            else{
+                console.log(error.message)
+                response.status(500).json("Eccezione non gestita")
+            }
         }
     }
     catch (error){
@@ -429,30 +444,82 @@ app.delete('/api/materia/:nome', (request, response) => {
     response.json("Rimosso con successo");
 })
 
-//API CATALOGHI
+/**
+ * @swagger
+ * /api/catalogo:
+ *   get:
+ *     summary: Restituisce la lista dei cataloghi.
+ *     description: Restituisce una lista contente tutti i cataloghi.
+ *     responses:
+ *       200:
+ *         description: Una lista di cataloghi con la rispettiva materia.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Nome del catalogo.
+ *                         example: Appunti di novembre
+ *                       materia:
+ *                         type: string
+ *                         description: Nome della materia associata.
+ *                         example: Ingegneria del software
+ *       404:
+ *         description: Nessun catalogo presente.
+ */
 app.get('/api/catalogo/', (request, response) => {
 
     sql = "SELECT * FROM cataloghi"
-    row = db.prepare(sql, function(err){
-        if (err){
-            return console.log(err.message)
-        }
-    }).all()
+    row = db.prepare(sql).all()
     if (row == undefined || Object.keys(row).length == 0){
-        response.send("Nessun catalogo presente")
+        response.status(404).json("Nessun catalogo presente")
     }
     else{
-        response.send(row)
+        response.json(row)
     }
 })
 
+/**
+ * @swagger
+ * /api/catalogo:
+ *   post:
+ *     summary: Crea un catalogo.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                  type: string
+ *                  description: Nome del catalogo da salvare.
+ *                  example: Appunti di novembre
+ *               materia:
+ *                  type: string
+ *                  description: Materia da associare al catalogo.
+ *                  example: Ingegneria del software
+ *     responses:
+ *       201:
+ *         description: Catalogo inserito
+ *       404:
+ *         description: Nessuna materia presente con quel nome
+ *       409:
+ *         description: Esiste già un catalogo con questo nome
+ *       500:
+ *         description: Eccezione non gestita
+*/
 app.post('/api/catalogo', (request, response) => {
     let materia = request.body["materia"]
     let sql = "SELECT name FROM materie"
     let materie = db.prepare(sql).all()
-    if (materie == undefined || Object.keys(materie).length == 0){
-        response.send("Nessuna materia presente")
-    }
     let found = false
     for (i = 0; i < Object.keys(materie).length && found == false; i++){
         if (materia == materie[i].name){
@@ -460,27 +527,64 @@ app.post('/api/catalogo', (request, response) => {
         }
     }
     if (!found){
-        response.send("Nessuna materia presente con quel nome")
+        response.status(404).json("Nessuna materia presente con quel nome")
         return
     }
     sql = "INSERT INTO cataloghi(name, materia) VALUES(?, ?)"
     try{
-        db.prepare(sql).run(request.body["name"], materia);
-        response.json("Catalogo creato")
+        db.prepare(sql).run(request.body["nome"], materia);
+        response.status(201).json("Catalogo creato")
     }
     catch (error){
-        console.log(error.message)
-        response.json(error.message)
+        if (error.message.startsWith("UNIQUE constraint failed: ")){
+            response.status(409).json("Esiste già un catalogo con questo nome")
+        }
+        else{
+            console.log(error.message)
+            response.status(500).json("Eccezione non gestita")
+        }
     }
 });
 
+/**
+ * @swagger
+ * /api/catalogo:
+ *   put:
+ *     summary: Crea un catalogo.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                  type: string
+ *                  description: Nuovo nome del catalogo.
+ *                  example: Appunti di dicembre
+ *               materia:
+ *                  type: string
+ *                  description: Materia da associare al catalogo.
+ *                  example: Ingegneria del software
+ *               nome_attuale:
+ *                  type: string
+ *                  description: Nome attuale del catalogo.
+ *                  example: Appunti di novembre
+ *     responses:
+ *       201:
+ *         description: Catalogo inserito
+ *       404:
+ *         description: Nessuna materia presente con quel nome<br />
+ *                      Nessuna catalogo presente con quel nome
+ *       409:
+ *         description: Esiste già un catalogo con questo nome
+ *       500:
+ *         description: Eccezione non gestita
+*/
 app.put('/api/catalogo', (request, response) => {
     let materia = request.body["materia"]
     let sql = "SELECT name FROM materie"
     let materie = db.prepare(sql).all()
-    if (materie == undefined || Object.keys(materie).length == 0){
-        response.send("Nessuna materia presente")
-    }
     let found = false
     for (i = 0; i < Object.keys(materie).length && found == false; i++){
         if (materia == materie[i].name){
@@ -488,14 +592,14 @@ app.put('/api/catalogo', (request, response) => {
         }
     }
     if (!found){
-        response.send("Nessuna materia presente con quel nome")
+        response.status(404).send("Nessuna materia presente con quel nome")
         return
     }
     sql = "UPDATE cataloghi SET name = ?, materia = ? WHERE name = ?"
     try{
-        let info = db.prepare(sql).run(request.body["name"], materia, request.body["old_name"]);
+        let info = db.prepare(sql).run(request.body["nome"], materia, request.body["nome_attuale"]);
         if (info.changes == 0){
-            response.json("Catalogo non presente")
+            response.status(404).json("Nessun catalogo presente con quel nome")
         }
         else{
             response.json("Catalogo aggiornato")
@@ -503,7 +607,7 @@ app.put('/api/catalogo', (request, response) => {
     }
     catch (error){
         console.log(error.message)
-        response.json(error.message)
+        response.status(500).json("Eccezione non gestita")
     }
 });
 
