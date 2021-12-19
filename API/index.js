@@ -699,11 +699,12 @@ app.delete('/api/catalogo/:nome', (request, response) => {
     }
     sql = "SELECT * FROM note WHERE catalogo = ? ORDER BY id ASC"
     rows = db.prepare(sql).all(request.params.catalogo)
-    if (row == undefined || Object.keys(row).length == 0){
+    console.log(rows)
+    if (rows == undefined || Object.keys(rows).length == 0){
         response.status(404).json("Nessuna scheda presente nel catalogo")
     }
     else{
-        response.send(row)
+        response.send(rows)
     }
 })
 /**
@@ -735,7 +736,7 @@ app.delete('/api/catalogo/:nome', (request, response) => {
 */
 app.post('/api/nota', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
-    row = db.prepare(sql).get(request.params.catalogo)
+    row = db.prepare(sql).get(request.body["catalogo"])
     if (row == undefined){
         response.status(404).send("Nessun catalogo presente con il nome indicato")
         return
@@ -805,10 +806,9 @@ app.put('/api/nota', (request, response) => {
     }
 });
 
-// TODO FINIRE API nota
 /**
  * @swagger
- * /api/nota/{id}:
+ * /api/nota/{id}&{catalogo}:
  *   delete:
  *     summary: Rimuove una nota dal catalogo.
  *     parameters:
@@ -817,25 +817,29 @@ app.put('/api/nota', (request, response) => {
  *         schema:
  *             type: integer
  *         required: true
- *         description: id della scheda da rimuovere
+ *         description: id della nota da rimuovere
+ *       - in: path
+ *         name: catalogo
+ *         schema:
+ *             type: string
+ *         required: true
+ *         description: catalogo dal quale va rimossa la nota
  *     responses:
  *       200:
  *         description: Rimosso con successo
  *       404:
- *         description: Nessuna scheda presente con l'id indicato
+ *         description: Nel catalogo non è presente nessuna nota con l'id indicato
 */
-app.delete('/api/scheda/:id', (request, response) => {
-    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
-    row = db.prepare(sql).get(request.params.id)
+app.delete('/api/nota/:id&:catalogo', (request, response) => {
+    sql = "SELECT id FROM note WHERE id = ? AND catalogo = ?"
+    row = db.prepare(sql).get(request.params.id, request.params.catalogo)
     if (row == undefined)
-        response.status(404).send("Nessuna scheda presente con l'id indicato")
-    sql = "DELETE FROM schede WHERE id = ?"
-    db.prepare(sql, function(err) {
-        if (err) {
-          console.log(err.message);
-        }
-      }).run(request.params.id)
-    response.json("Rimosso con successo");
+        response.status(404).send("Nel catalogo non è presente nessuna nota con l'id indicato")
+    else{
+        sql = "DELETE FROM note WHERE id = ?"
+        db.prepare(sql).run(request.params.id)
+        response.json("Rimosso con successo");
+    }
 })
 
 
