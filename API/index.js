@@ -49,7 +49,7 @@ const { request, response } = require("express");
 //SETUP
 if (!fs.existsSync("./uploads")){
   fs.mkdirSync("uploads")
-  fs.writeFileSync("./uploads/photos.txt","0")
+  fs.writeFileSync("./uploads/files.txt","0")
 }
 
 sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
