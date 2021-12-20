@@ -83,15 +83,9 @@ app.use(cors())
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
- *             properties:
- *               percorso_immagine:
- *                  type: string
- *                  nullable: true
- *                  description: Il percorso dove è salvata l'immagine collegata a questa scheda, null se non viene scelta nessuna immagine.
- *                  example: /uploads/1.jpg
  *     responses:
  *       201:
  *         description: nome del file aggiunto
