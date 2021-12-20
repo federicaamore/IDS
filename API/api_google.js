@@ -13,7 +13,8 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar',
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = 'token.json';
-const CALENDAR_ID = "ksoct8ono2cem4gkdvdnl4af0g@group.calendar.google.com"
+//ID del calendario da utilizzare per l'aggiunta degli eventi
+const CALENDAR_ID = "ksoct8ono2cem4gkdvdnl4af0g@group.calendar.google.com" 
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -77,12 +78,13 @@ function insertEvent(auth, data){
     function(err, event) {
       if (err) {
         console.log('There was an error contacting the Calendar service: ' + err);
+        data[3].status(404).send("Calendario non trovato")
         return;
       }
       
       console.log('Event created:', event.data.id);
       data[1].prepare("INSERT INTO eventi(id, materia) VALUES(?, ?)").run(event.data.id, data[2])
-      data[3].send("Evento aggiunto " + event.data.id)
+      data[3].status(201).send("Evento aggiunto con id " + event.data.id)
     }
   );
 }
@@ -99,10 +101,11 @@ function updateEvent(auth, data){
     function(err, event) {
       if (err) {
         console.log('There was an error contacting the Calendar service: ' + err);
+        data[3].status(404).send("Calendario non trovato")
         return;
       }
       data[2].prepare("UPDATE eventi SET materia = ? WHERE id = ?").run(data[3], data[0])
-      console.log('Event created:', event.data.id);
+      console.log('Evento aggiornato:', event.data.id);
       data[4].send("Evento aggiornato " + event.data.id)
     }
   );
@@ -117,40 +120,13 @@ function deleteEvent(auth, data){
   }, function(err,event) {
     if (err){
       console.log('There was an error contacting the Calendar service: ' + err)
-      data[2].send(err.message)
+      data[2].status(404).send("Calendario non trovato")
       return
     }
     console.log(event)
     data[1].prepare("DELETE FROM eventi WHERE id = ?").run(data[0])
     data[2].send("Evento rimosso con id: " + data[0])
 })
-}
-/**
- * Lists the next 10 events on the user's primary calendar.
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
-
-function listEvents(auth, event) {
-  const calendar = google.calendar({version: 'v3', auth});
-  calendar.events.list({
-    calendarId: CALENDAR_ID,
-    timeMin: (new Date()).toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const events = res.data.items;
-    if (events.length) {
-      console.log('Upcoming 10 events:');
-      events.map((event, i) => {
-        const start = event.start.dateTime || event.start.date;
-        console.log(event);
-      });
-    } else {
-      console.log('No upcoming events found.');
-    }
-  });
 }
 
 module.exports = {authorize, insertEvent, deleteEvent, updateEvent}
