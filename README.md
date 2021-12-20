@@ -16,5 +16,5 @@ Questo progetto è stato sviluppato da:
 
 
 
-## Operazioni da effettuare per visualizzare ***le cose***
+
 
