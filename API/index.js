@@ -68,7 +68,7 @@ var fileUpload = require('express-fileupload');
 app.use(fileUpload({
   createParentPath: true
 }));
-//app.use('/upload/img', Express.static(__dirname + '/uploads'));
+app.use('/uploads', Express.static(__dirname + '/uploads'));
 
 
 var cors = require('cors');
