@@ -46,19 +46,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const { request, response } = require("express");
 
-//SETUP
-if (!fs.existsSync("./uploads")){
-  fs.mkdirSync("uploads")
-  fs.writeFileSync("./uploads/files.txt","0")
-}
-
-sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
-        CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
-        CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
-        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, nome text, percorso_file text, catalogo text);\
-        CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
-db.exec(sql)
-
 app.listen(49146, () => {
     console.log("API started...")
 });
@@ -132,7 +119,7 @@ app.post('/upload/file', (request, response) => {
  *                          type: string
  *                          nullable: true 
  *                          description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
- *                          example: Il "+" indica l'operazione di addizione.
+ *                          example: agile è un metodo per sviluppare software
  *                       frequenza_invio_notifica :
  *                          type: integer
  *                          description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
@@ -153,11 +140,11 @@ app.get('/api/scheda', (request, response) => {
             return console.log(err.message)
         }
     }).all()
-    if (row == undefined || Object.keys(row).length == 0){
+    if (rows == undefined || Object.keys(rows).length == 0){
         response.status(404).json("Nessuna scheda presente")
     }
     else{
-        response.send(row)
+        response.json(rows)
     }
 })
 
@@ -182,7 +169,7 @@ app.get('/api/scheda', (request, response) => {
  *                  type: string
  *                  nullable: true 
  *                  description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
- *                  example: Il "+" indica l'operazione di addizione.
+ *                  example: agile è un metodo per sviluppare software
  *               frequenza_invio_notifica :
  *                  type: integer
  *                  description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
@@ -195,8 +182,15 @@ app.get('/api/scheda', (request, response) => {
  *     responses:
  *       201:
  *         description: Scheda aggiunta con id x
+ *       404:
+ *         description: Nessuna immagine con il nome indicato
 */
 app.post('/api/scheda', (request, response) => {
+    let percorso_immagine = request.body["percorso_immagine"]
+    if (percorso_immagine != undefined && !fs.existsSync(percorso_immagine)){
+        response.status(404).json("Nessuna immagine con il nome indicato")
+        return
+    }
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
     row = db.prepare(sql).get()
     if (row == undefined) 
@@ -211,7 +205,7 @@ app.post('/api/scheda', (request, response) => {
         if (err) {
           return console.log(err.message);
         }
-      }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
+      }).run(id, percorso_immagine, request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
 
     response.status(201).json("Scheda aggiunta con id "+id)
 })
@@ -238,7 +232,7 @@ app.delete('/api/scheda/:id', (request, response) => {
     sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
     row = db.prepare(sql).get(request.params.id)
     if (row == undefined)
-        response.status(404).send("Nessuna scheda presente con l'id indicato")
+        response.status(404).json("Nessuna scheda presente con l'id indicato")
     sql = "DELETE FROM schede WHERE id = ?"
     db.prepare(sql, function(err) {
         if (err) {
@@ -294,7 +288,7 @@ app.get('/api/materia/', (request, response) => {
         response.status(404).json("Nessuna materia presente")
     }
     else{
-        response.send(row)
+        response.json(row)
     }
 })
 
@@ -436,7 +430,7 @@ app.delete('/api/materia/:nome', (request, response) => {
     sql = "SELECT name FROM materie WHERE name = ?;"
     row = db.prepare(sql).get(request.params.nome)
     if (row == undefined)
-        response.status(404).send("Nessuna materia presente con il nome indicato")
+        response.status(404).json("Nessuna materia presente con il nome indicato")
     else{
         sql = "DELETE FROM materie WHERE name = ?"
         db.prepare(sql).run(request.params.name)
@@ -578,7 +572,7 @@ app.put('/api/catalogo', (request, response) => {
     let materia = request.body["materia"]
     let found = utils.is_subject(db, materia)
     if (!found){
-        response.status(404).send("Nessuna materia presente con quel nome")
+        response.status(404).json("Nessuna materia presente con quel nome")
         return
     }
     sql = "UPDATE cataloghi SET name = ?, materia = ? WHERE name = ?"
@@ -619,7 +613,7 @@ app.delete('/api/catalogo/:nome', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
     row = db.prepare(sql).get(request.params.nome)
     if (row == undefined)
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
     else{
         sql = "DELETE FROM cataloghi WHERE name = ?"
         db.prepare(sql).run(request.params.name)
@@ -678,7 +672,7 @@ app.delete('/api/catalogo/:nome', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
     row = db.prepare(sql).get(request.params.catalogo)
     if (row == undefined){
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
         return
     }
     sql = "SELECT * FROM note WHERE catalogo = ? ORDER BY id ASC"
@@ -688,7 +682,7 @@ app.delete('/api/catalogo/:nome', (request, response) => {
         response.status(404).json("Nessuna scheda presente nel catalogo")
     }
     else{
-        response.send(rows)
+        response.json(rows)
     }
 })
 /**
@@ -722,7 +716,7 @@ app.post('/api/nota', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
     row = db.prepare(sql).get(request.body["catalogo"])
     if (row == undefined){
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
         return
     }
     sql = "SELECT id FROM note ORDER BY id DESC LIMIT 1;"
@@ -818,7 +812,7 @@ app.delete('/api/nota/:id&:catalogo', (request, response) => {
     sql = "SELECT id FROM note WHERE id = ? AND catalogo = ?"
     row = db.prepare(sql).get(request.params.id, request.params.catalogo)
     if (row == undefined)
-        response.status(404).send("Nel catalogo non è presente nessuna nota con l'id indicato")
+        response.status(404).json("Nel catalogo non è presente nessuna nota con l'id indicato")
     else{
         sql = "DELETE FROM note WHERE id = ?"
         db.prepare(sql).run(request.params.id)
@@ -922,7 +916,7 @@ app.post('/api/evento', (request, response) => {
     materia = request.body["materia"]
     let found = utils.is_subject(db, materia)
     if (!found && materia != undefined){
-        response.status(404).send("Nessuna materia presente con quel nome")
+        response.status(404).json("Nessuna materia presente con quel nome")
         return
     }
     var event = {
@@ -1065,3 +1059,4 @@ app.delete("/api/evento/:id", (request, response) => {
         });
 });
 
+module.exports = app

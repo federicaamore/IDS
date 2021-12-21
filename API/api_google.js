@@ -78,13 +78,13 @@ function insertEvent(auth, data){
     function(err, event) {
       if (err) {
         console.log('There was an error contacting the Calendar service: ' + err);
-        data[3].status(404).send("Calendario non trovato")
+        data[3].status(404).json("Calendario non trovato")
         return;
       }
       
       console.log('Event created:', event.data.id);
       data[1].prepare("INSERT INTO eventi(id, materia) VALUES(?, ?)").run(event.data.id, data[2])
-      data[3].status(201).send("Evento aggiunto con id " + event.data.id)
+      data[3].status(201).json("Evento aggiunto con id " + event.data.id)
     }
   );
 }
@@ -101,12 +101,12 @@ function updateEvent(auth, data){
     function(err, event) {
       if (err) {
         console.log('There was an error contacting the Calendar service: ' + err);
-        data[3].status(404).send("Calendario non trovato")
+        data[3].status(404).json("Calendario non trovato")
         return;
       }
       data[2].prepare("UPDATE eventi SET materia = ? WHERE id = ?").run(data[3], data[0])
       console.log('Evento aggiornato:', event.data.id);
-      data[4].send("Evento aggiornato " + event.data.id)
+      data[4].json("Evento aggiornato " + event.data.id)
     }
   );
 }
@@ -120,12 +120,12 @@ function deleteEvent(auth, data){
   }, function(err,event) {
     if (err){
       console.log('There was an error contacting the Calendar service: ' + err)
-      data[2].status(404).send("Calendario non trovato")
+      data[2].status(404).json("Calendario non trovato")
       return
     }
     console.log(event)
     data[1].prepare("DELETE FROM eventi WHERE id = ?").run(data[0])
-    data[2].send("Evento rimosso con id: " + data[0])
+    data[2].json("Evento rimosso con id: " + data[0])
 })
 }
 
