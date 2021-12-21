@@ -172,6 +172,7 @@ app.get('/api/scheda', (request, response) => {
  *                  example: agile è un metodo per sviluppare software
  *               frequenza_invio_notifica :
  *                  type: integer
+ *                  nullable: true
  *                  description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
  *                  example: 5.
  *               ultimo_invio :
@@ -182,13 +183,20 @@ app.get('/api/scheda', (request, response) => {
  *     responses:
  *       201:
  *         description: Scheda aggiunta con id x
+ *       400:
+ *         Inserire un'immagine o il contenuto
  *       404:
  *         description: Nessuna immagine con il nome indicato
 */
 app.post('/api/scheda', (request, response) => {
     let percorso_immagine = request.body["percorso_immagine"]
+    let contenuto = request.body["contenuto"]
     if (percorso_immagine != undefined && !fs.existsSync(percorso_immagine)){
         response.status(404).json("Nessuna immagine con il nome indicato")
+        return
+    }
+    if (percorso_immagine == undefined && contenuto == undefined){
+        response.status(400).json("Inserire un'immagine o il contenuto")
         return
     }
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
@@ -205,7 +213,7 @@ app.post('/api/scheda', (request, response) => {
         if (err) {
           return console.log(err.message);
         }
-      }).run(id, percorso_immagine, request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
+      }).run(id, percorso_immagine, contenuto, request.body["frequenza_invio_notifica"]);
 
     response.status(201).json("Scheda aggiunta con id "+id)
 })
