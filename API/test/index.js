@@ -3,6 +3,9 @@ var request = require('supertest');
 var app = require('../');
 const fs = require ("fs")
 
+// I test case sono stati definiti secondo i dati contenuti nel database generato con il file setup.js
+// ATTENZIONE: avviare quel file cancella un eventuale database già presente
+
 test('Lista schede', function (assert) {
     request(app)
         .get('/api/scheda')

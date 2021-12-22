@@ -10,17 +10,23 @@ const swaggerUi = require('swagger-ui-express');
 
 var app = Express();
 
+const contacts = {
+    "Amore Federica":"federica.amore@studenti.unitn.it",
+    "Copetti Camilla":"camilla.copetti@studenti.unitn.it",
+    "Germenia Riccardo":"riccardo.germenia@studenti.unitn.it"
+}
+
 const swaggerOptions = {
     swaggerDefinition: {
         openapi: '3.0.0',
         info: {
-            title: 'Express API for My Project',
+            title: 'Documentazione express api UNITOSTUDY',
             version: '1.0.0',
             description:
                 'This is a REST API application made with Express.',
             license: {
-                name: 'Licensed Under MIT',
-                url: 'https://spdx.org/licenses/MIT.html',
+                name: 'Licensed Under ISC',
+                url: 'https://spdx.org/licenses/ISC.html',
             },
             contact: {
                 name: 'Group40',
@@ -61,6 +67,10 @@ app.use('/uploads', Express.static(__dirname + '/uploads'));
 var cors = require('cors');
 const { json } = require("body-parser");
 app.use(cors())
+
+app.get("/", (request, response) => {
+    response.json(contacts)
+});
 
 /**
  * @swagger
@@ -135,11 +145,7 @@ app.post('/upload/file', (request, response) => {
 app.get('/api/scheda', (request, response) => {
 
     sql = "SELECT * FROM schede ORDER BY id ASC"
-    rows = db.prepare(sql, function(err){
-        if (err){
-            return console.log(err.message)
-        }
-    }).all()
+    rows = db.prepare(sql).all()
     if (rows == undefined || Object.keys(rows).length == 0){
         response.status(404).json("Nessuna scheda presente")
     }
@@ -208,12 +214,7 @@ app.post('/api/scheda', (request, response) => {
     id = id + 1
     console.log(id)
     sql = "INSERT INTO schede(id, percorso_immagine, contenuto, frequenza_invio_notifica) VALUES(?, ?, ?, ?)"
-    db.prepare(sql,
-         function(err) {
-        if (err) {
-          return console.log(err.message);
-        }
-      }).run(id, percorso_immagine, contenuto, request.body["frequenza_invio_notifica"]);
+    db.prepare(sql).run(id, percorso_immagine, contenuto, request.body["frequenza_invio_notifica"]);
 
     response.status(201).json("Scheda aggiunta con id "+id)
 })

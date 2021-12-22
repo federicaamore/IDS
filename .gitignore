@@ -1,4 +1,3 @@
-*.db
-uploads/
+user_data.db
 credentials.json
 token.json

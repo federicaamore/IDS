@@ -14,7 +14,7 @@ function is_subject(db, materia){
 
 function add_file(request){
     let file = request.files.file;
-    let data = fs.readFileSync('./uploads/photos.txt').toString();
+    let data = fs.readFileSync('./uploads/files.txt').toString();
     let file_name = data + "." + file.name.split(".").at(-1)
     if (file.size > 10485760)
         return "error"
