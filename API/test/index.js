@@ -63,4 +63,40 @@ test('Aggiunta scheda con immagine non esistente', function (assert) {
         });
 });
 
-//TODO test api in modo da rimuovere schede appena aggiunte
+test('Rimozione scheda', function (assert) {
+    request(app)
+        .delete('/api/scheda/1')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function (err, res) {
+            assert.error(err, 'Nessun errore');
+            assert.same(res.text, '"Rimosso con successo"');
+            assert.end();
+        });
+});
+
+test('Rimozione scheda non esistente', function (assert) {
+    
+    request(app)
+        .delete('/api/scheda/50')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(function (err, res) {
+            assert.error(err, 'Nessun errore');
+            assert.same(res.text, '"Nessuna scheda presente con l\'id indicato"');
+            assert.end();
+        });
+});
+
+test('Rimozione scheda con id non numerico', function (assert) {
+    
+    request(app)
+        .delete('/api/scheda/a')
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .end(function (err, res) {
+            assert.error(err, 'Nessun errore');
+            assert.same(res.text, '"Nessuna scheda presente con l\'id indicato"');
+            assert.end();
+        });
+});

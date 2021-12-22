@@ -241,13 +241,11 @@ app.delete('/api/scheda/:id', (request, response) => {
     row = db.prepare(sql).get(request.params.id)
     if (row == undefined)
         response.status(404).json("Nessuna scheda presente con l'id indicato")
-    sql = "DELETE FROM schede WHERE id = ?"
-    db.prepare(sql, function(err) {
-        if (err) {
-          console.log(err.message);
-        }
-      }).run(request.params.id)
-    response.json("Rimosso con successo");
+    else{
+        sql = "DELETE FROM schede WHERE id = ?"
+        db.prepare(sql).run(request.params.id)
+        response.json("Rimosso con successo");
+    }
 })
 
 /**
