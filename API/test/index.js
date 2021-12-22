@@ -68,7 +68,7 @@ test('Aggiunta scheda con immagine non esistente', function (assert) {
 
 test('Rimozione scheda', function (assert) {
     request(app)
-        .delete('/api/scheda/1')
+        .del('/api/scheda/1')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function (err, res) {
@@ -81,7 +81,7 @@ test('Rimozione scheda', function (assert) {
 test('Rimozione scheda non esistente', function (assert) {
     
     request(app)
-        .delete('/api/scheda/50')
+        .del('/api/scheda/50')
         .expect('Content-Type', /json/)
         .expect(404)
         .end(function (err, res) {
@@ -94,7 +94,7 @@ test('Rimozione scheda non esistente', function (assert) {
 test('Rimozione scheda con id non numerico', function (assert) {
     
     request(app)
-        .delete('/api/scheda/a')
+        .del('/api/scheda/a')
         .expect('Content-Type', /json/)
         .expect(404)
         .end(function (err, res) {

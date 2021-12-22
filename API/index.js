@@ -998,7 +998,8 @@ app.post('/api/evento', (request, response) => {
  *         description: Evento aggiunto con id x
  *       404:
  *         description: Nessun calendario presente<br />
- *                      Nessuna materia presente con quel nome.
+ *                      Nessuna materia presente con quel nome<br />
+ *                      Nessun evento con questo id
  *       500:
  *         description: Credenziali non valide
 */
@@ -1009,6 +1010,10 @@ app.put("/api/evento", (request, response) => {
     let found = utils.is_subject(db, materia)
     if (!found && materia != undefined){
         response.status(404).json("Nessuna materia presente con quel nome")
+        return
+    }
+    if (!utils.event_exists(db, id)){
+        response.status(404).json("Nessun evento con questo id")
         return
     }
     var event = {
@@ -1050,20 +1055,26 @@ app.put("/api/evento", (request, response) => {
  *       200:
  *         description: Rimosso con successo
  *       404:
- *         description: Non è presente nessun calendario
+ *         description: Non è presente nessun calendario<br />
+ *                      Nessun evento con questo id
  *       500:
  *         description: Credenziali non valide
 */
 app.delete("/api/evento/:id", (request, response) => {
     id = request.params.id
-    data = [id, db, response]
-    fs.readFile('credentials.json', (err, content) => {
-        if (err){
-            response.status(500).json("Credenziali non valide")
-            return console.log('Error loading client secret file:', err);
-        }
-        google_api.authorize(JSON.parse(content), data, google_api.deleteEvent);
-        });
+    if (!utils.event_exists(db, id)){
+        response.status(404).json("Nessun evento con questo id")
+    }
+    else{
+        data = [id, db, response]
+        fs.readFile('credentials.json', (err, content) => {
+            if (err){
+                response.status(500).json("Credenziali non valide")
+                return console.log('Error loading client secret file:', err);
+            }
+            google_api.authorize(JSON.parse(content), data, google_api.deleteEvent);
+            });
+    }
 });
 
 module.exports = app

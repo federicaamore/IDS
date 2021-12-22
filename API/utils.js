@@ -12,6 +12,16 @@ function is_subject(db, materia){
     return found
 }
 
+function event_exists(db, event_id){
+    let sql = "SELECT id FROM eventi WHERE id = ?"
+    let rows = db.prepare(sql).all(event_id)
+    let found = true
+    if (rows == undefined || Object.keys(rows).length == 0){
+        found = false
+    }
+    return found
+}
+
 function add_file(request){
     let file = request.files.file;
     let data = fs.readFileSync('./uploads/files.txt').toString();
@@ -23,4 +33,4 @@ function add_file(request){
     fs.writeFileSync("./uploads/files.txt", (parseInt(data)+1).toString())
     return file_name
 }
-module.exports = {is_subject, add_file}
+module.exports = {is_subject, add_file, event_exists}
