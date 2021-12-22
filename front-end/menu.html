@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <title>Menu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet"
+    crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"></script>
+
+  <style>
+    .bg-sfondo {
+      --bs-bg-opacity: 1;
+      background-color: rgb(0, 66, 9);
+    }
+
+    .nome-pagina {
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      text-align: center;
+      background-color: rgb(1, 139, 81);
+      position: sticky;
+      width: 100%;
+      height: 80px;
+      margin-top: 0em;
+      margin-left: 0;
+      opacity: 1;
+      transition: opacity 0.3s;
+      padding-top: 100x;
+      padding-bottom: 10px;
+    }
+
+    .top {
+      position: fixed;
+      top: 0%;
+      left: 0%;
+      z-index: 999;
+      width: 100%;
+      height: 120px;
+    }
+
+    .fixed-content-aggiungi {
+      bottom: 3%;
+      right: 1%;
+      position: fixed;
+      z-index: 999;
+      color: #FFF;
+      text-align: left;
+    }
+
+    .fixed-content-domanda {
+      top: 100px;
+      right: 1%;
+      position: fixed;
+      z-index: 999;
+      color: #FFF;
+      text-align: left;
+    }
+
+    .btn1 {
+      background-color: rgb(8, 221, 114);
+      border: solid;
+      border-color: green;
+      border-radius: 30px;
+      float: left;
+      color: white;
+      padding: 12px 16px;
+      font-size: 50px;
+      cursor: pointer;
+      width: 90%;
+    }
+
+    .btn-aggiungi {
+      background-color: rgb(0, 170, 99);
+      border: solid;
+      border-color: rgb(0, 66, 9);
+      border-radius: 20px;
+      color: white;
+      padding: 12px 16px;
+      font-size: 40px;
+      cursor: pointer;
+    }
+
+    .btn-domanda {
+      background-color: rgb(0, 105, 61);
+      border: solid;
+      border-color: rgb(0, 105, 61);
+      border-radius: 20px;
+      color: white;
+      font-size: 40px;
+      cursor: pointer;
+    }
+
+    .max {
+      width: 100%;
+      height: 100%;
+    }
+
+    .square {
+      float: left;
+      position: relative;
+      width: 45%;
+      padding-bottom: 55%;
+      margin: 2.5%;
+      overflow: hidden;
+    }
+    .square2 {
+      float: left;
+      position: relative;
+      width: 45%;
+      padding-bottom: 55%;
+      margin-left: 27%;
+      overflow: hidden;
+    }    
+
+    .content1 {
+      position: absolute;
+      height: 90%;
+      width: 90%;
+      font-size: 30px;
+      font-family: 'Lato', verdana, sans-serif;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body style="background-color: #d4f8c8;">
+
+  <!-- BARRA SUPERIORE -->
+  <div class="top">
+
+    <!-- BARRA navigazione -->
+    <nav id="navbar_main" class="mobile-offcanvas navbar navbar-expand-lg navbar-dark bg-sfondo"
+      style="font-size: 30px;">
+      <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+          aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+          <ul class="navbar-nav">
+            <li class="nav-item+">
+              <a class="nav-link" href="#">Calendario</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Note</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Schede memoria</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Prenotazione esami</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Impostazioni</a>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <a class=" navbar-brand" href="#">UNITOSTUDY</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- BARRA nome pagina -->
+    <div class="nome-pagina">
+      <h1 text-align=center style="font-size: 70px;">Menu</h1>
+    </div>
+  </div>
+
+  <div style="height: 150px;"></div>
+
+  <!-- TASTO TUTORIAL (punto di domanda) -->
+  <div class="fixed-content-domanda">
+    <button type="button" class="btn-domanda shadow-lg p-3 ">
+      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="currentColor"
+        class="bi bi-question-circle-fill" viewBox="0 0 16 16">
+        <path
+          d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.496 6.033h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286a.237.237 0 0 0 .241.247zm2.325 6.443c.61 0 1.029-.394 1.029-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94 0 .533.425.927 1.01.927z" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- TASTO "AGGIUNGI" -->
+  <div class="btn-group dropup fixed-content-aggiungi">
+    <button type="button" class="btn-aggiungi  dropdown-toggle cell shadow-lg p-3 " data-bs-toggle="dropdown"
+      aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" class="bi bi-door-open" viewBox="0 0 16 16">
+        <path d="M8.5 10c-.276 0-.5-.448-.5-1s.224-1 .5-1 .5.448.5 1-.224 1-.5 1z"/>
+        <path d="M10.828.122A.5.5 0 0 1 11 .5V1h.5A1.5 1.5 0 0 1 13 2.5V15h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V1.5a.5.5 0 0 1 .43-.495l7-1a.5.5 0 0 1 .398.117zM11.5 2H11v13h1V2.5a.5.5 0 0 0-.5-.5zM4 1.934V15h6V1.077l-6 .857z"/>
+      </svg> &nbsp
+    </button>
+    <ul class="dropdown-menu">
+      <li style="font-size: 30px; font-size: 50px;"><a class="dropdown-item" href="#">
+          <!-- SIMBOLO nota -->
+          Login
+        </a>
+      </li>
+    </ul>
+  </div>
+
+
+  <!-- NOTE -->
+
+  <div class="square">
+    <div class="content1">
+      <button class="btn1">
+        <a href="#"></a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="max" fill="currentColor" class="bi bi-calendar3" viewBox="0 0 16 16">
+          <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"/>
+          <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+        </svg>Calendario<br>&nbsp</button>
+    </div>
+  </div>
+
+  <div class="square">
+    <div class="content1">
+      <button class="btn1">
+        <a href="#"></a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="max" fill="currentColor" class="bi bi-card-checklist" viewBox="0 0 16 16">
+          <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
+          <path d="M7 5.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0zM7 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
+        </svg>Prenotazione esami</button>
+    </div>
+  </div>
+
+
+  <div class="square2">
+    <div class="content1">
+      <button class="btn1">
+        <a href="#"></a>
+        <svg xmlns="http://www.w3.org/2000/svg" class = "max" fill="currentColor" class="bi bi-collection" viewBox="0 0 16 16">
+          <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zm1.5.5A.5.5 0 0 1 1 13V6a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-13z"/>
+        </svg>Note<br>&nbsp</button>
+    </div>
+  </div>
+
+
+  <div class="square">
+    <div class="content1">
+      <button class="btn1">
+        <a href="#"></a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="max" fill="currentColor" class="bi bi-file-richtext" viewBox="0 0 16 16">
+          <path d="M7 4.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm-.861 1.542 1.33.886 1.854-1.855a.25.25 0 0 1 .289-.047l1.888.974V7.5a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V7s1.54-1.274 1.639-1.208zM5 9a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
+          <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+        </svg>Schede memoria</button>
+    </div>
+  </div>
+
+
+
+  <div class="square">
+    <div class="content1">
+      <button class="btn1">
+        <a href="#"></a>
+        <svg xmlns="http://www.w3.org/2000/svg" class="max" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
+          <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434l.071-.286zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5zm0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78h4.723zM5.048 3.967c-.03.021-.058.043-.087.065l.087-.065zm-.431.355A4.984 4.984 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8 4.617 4.322zm.344 7.646.087.065-.087-.065z"/>
+        </svg>Impostazioni<br>&nbsp</button>
+    </div>
+  </div>
+
+</body>
+
+</html>
