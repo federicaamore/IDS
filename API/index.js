@@ -2,24 +2,31 @@ var Express = require("express");
 var bodyParser = require("body-parser");
 const db = require("better-sqlite3")("user_data.db")
 var fs = require('fs');
-const google_api = require('./api_google.js');
+const google_api = require('./api_google.js'); 
+const utils = require('./utils.js'); 
 
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
 var app = Express();
 
+const contacts = {
+    "Amore Federica":"federica.amore@studenti.unitn.it",
+    "Copetti Camilla":"camilla.copetti@studenti.unitn.it",
+    "Germenia Riccardo":"riccardo.germenia@studenti.unitn.it"
+}
+
 const swaggerOptions = {
     swaggerDefinition: {
         openapi: '3.0.0',
         info: {
-            title: 'Express API for My Project',
+            title: 'Documentazione express api UNITOSTUDY',
             version: '1.0.0',
             description:
                 'This is a REST API application made with Express.',
             license: {
-                name: 'Licensed Under MIT',
-                url: 'https://spdx.org/licenses/MIT.html',
+                name: 'Licensed Under ISC',
+                url: 'https://spdx.org/licenses/ISC.html',
             },
             contact: {
                 name: 'Group40',
@@ -45,19 +52,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const { request, response } = require("express");
 
-//SETUP
-if (!fs.existsSync("./uploads")){
-  fs.mkdirSync("uploads")
-  fs.writeFileSync("./uploads/photos.txt","0")
-}
-
-sql =  "CREATE TABLE IF NOT EXISTS schede(id int UNIQUE, percorso_immagine text, contenuto text, frequenza_invio_notifica int, ultimo_invio text);\
-        CREATE TABLE IF NOT EXISTS materie(name text UNIQUE, R int, G int, B int);\
-        CREATE TABLE IF NOT EXISTS cataloghi(name text UNIQUE, materia text);\
-        CREATE TABLE IF NOT EXISTS note(id int UNIQUE, nome text, percorso_file text, catalogo text);\
-        CREATE TABLE IF NOT EXISTS eventi(id text UNIQUE, materia text)"
-db.exec(sql)
-
 app.listen(49146, () => {
     console.log("API started...")
 });
@@ -67,29 +61,40 @@ var fileUpload = require('express-fileupload');
 app.use(fileUpload({
   createParentPath: true
 }));
-//app.use('/upload/img', Express.static(__dirname + '/uploads'));
+app.use('/uploads', Express.static(__dirname + '/uploads'));
 
 
 var cors = require('cors');
 const { json } = require("body-parser");
 app.use(cors())
 
-//API GENERALI
+app.get("/", (request, response) => {
+    response.json(contacts)
+});
 
-app.get('/', (request, response) => {
-    console.log(request)
-    response.json('Hello World');
-})
-
-app.post('/upload/img', (request, response) => {
-  let image = request.files.image;
-  let data = fs.readFileSync('./uploads/photos.txt').toString();
-  let image_name = data + "." + image.name.split(".").at(-1)
-  //Con mv sposto l'immagine nella cartella giusta
-  image.mv('./uploads/' + image_name);
-  fs.writeFileSync("./uploads/photos.txt", (parseInt(data)+1).toString())
-
-  response.send(image_name)
+/**
+ * @swagger
+ * /upload/file:
+ *   post:
+ *     summary: Salva un file sul server.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: nome del file aggiunto
+ *       413:
+ *         description: Il file è troppo grande, dimensione massima 10MB
+*/
+app.post('/upload/file', (request, response) => {
+    let file_name = utils.add_file(request)
+    if (file_name != "error")
+        response.status(201).json(file_name)
+    else
+        response.status(413).json("Il file è troppo grande, dimensione massima 10MB")
 })
 
 /**
@@ -124,7 +129,7 @@ app.post('/upload/img', (request, response) => {
  *                          type: string
  *                          nullable: true 
  *                          description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
- *                          example: Il "+" indica l'operazione di addizione.
+ *                          example: agile è un metodo per sviluppare software
  *                       frequenza_invio_notifica :
  *                          type: integer
  *                          description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
@@ -140,16 +145,12 @@ app.post('/upload/img', (request, response) => {
 app.get('/api/scheda', (request, response) => {
 
     sql = "SELECT * FROM schede ORDER BY id ASC"
-    rows = db.prepare(sql, function(err){
-        if (err){
-            return console.log(err.message)
-        }
-    }).all()
-    if (row == undefined || Object.keys(row).length == 0){
+    rows = db.prepare(sql).all()
+    if (rows == undefined || Object.keys(rows).length == 0){
         response.status(404).json("Nessuna scheda presente")
     }
     else{
-        response.send(row)
+        response.json(rows)
     }
 })
 
@@ -174,9 +175,10 @@ app.get('/api/scheda', (request, response) => {
  *                  type: string
  *                  nullable: true 
  *                  description: Il testo da mostrare nella scheda, null se si vuole utilizzare solo un'immagine.
- *                  example: Il "+" indica l'operazione di addizione.
+ *                  example: agile è un metodo per sviluppare software
  *               frequenza_invio_notifica :
  *                  type: integer
+ *                  nullable: true
  *                  description: La frequenza (in ore) con cui la scheda di memoria va ricordata all'utente tramite una notifica.
  *                  example: 5.
  *               ultimo_invio :
@@ -187,8 +189,22 @@ app.get('/api/scheda', (request, response) => {
  *     responses:
  *       201:
  *         description: Scheda aggiunta con id x
+ *       400:
+ *         Inserire un'immagine o il contenuto
+ *       404:
+ *         description: Nessuna immagine con il nome indicato
 */
 app.post('/api/scheda', (request, response) => {
+    let percorso_immagine = request.body["percorso_immagine"]
+    let contenuto = request.body["contenuto"]
+    if (percorso_immagine != undefined && !fs.existsSync(percorso_immagine)){
+        response.status(404).json("Nessuna immagine con il nome indicato")
+        return
+    }
+    if (percorso_immagine == undefined && contenuto == undefined){
+        response.status(400).json("Inserire un'immagine o il contenuto")
+        return
+    }
     sql = "SELECT id FROM schede ORDER BY id DESC LIMIT 1;"
     row = db.prepare(sql).get()
     if (row == undefined) 
@@ -198,12 +214,7 @@ app.post('/api/scheda', (request, response) => {
     id = id + 1
     console.log(id)
     sql = "INSERT INTO schede(id, percorso_immagine, contenuto, frequenza_invio_notifica) VALUES(?, ?, ?, ?)"
-    db.prepare(sql,
-         function(err) {
-        if (err) {
-          return console.log(err.message);
-        }
-      }).run(id, request.body["percorso_immagine"], request.body["Contenuto"], request.body["frequenza_invio_notifica"]);
+    db.prepare(sql).run(id, percorso_immagine, contenuto, request.body["frequenza_invio_notifica"]);
 
     response.status(201).json("Scheda aggiunta con id "+id)
 })
@@ -230,14 +241,12 @@ app.delete('/api/scheda/:id', (request, response) => {
     sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
     row = db.prepare(sql).get(request.params.id)
     if (row == undefined)
-        response.status(404).send("Nessuna scheda presente con l'id indicato")
-    sql = "DELETE FROM schede WHERE id = ?"
-    db.prepare(sql, function(err) {
-        if (err) {
-          console.log(err.message);
-        }
-      }).run(request.params.id)
-    response.json("Rimosso con successo");
+        response.status(404).json("Nessuna scheda presente con l'id indicato")
+    else{
+        sql = "DELETE FROM schede WHERE id = ?"
+        db.prepare(sql).run(request.params.id)
+        response.json("Rimosso con successo");
+    }
 })
 
 /**
@@ -281,16 +290,12 @@ app.delete('/api/scheda/:id', (request, response) => {
 app.get('/api/materia/', (request, response) => {
 
     sql = "SELECT * FROM materie"
-    row = db.prepare(sql, function(err){
-        if (err){
-            return console.log(err.message)
-        }
-    }).all()
+    row = db.prepare(sql).all()
     if (row == undefined || Object.keys(row).length == 0){
         response.status(404).json("Nessuna materia presente")
     }
     else{
-        response.send(row)
+        response.json(row)
     }
 })
 
@@ -325,7 +330,7 @@ app.get('/api/materia/', (request, response) => {
  *     responses:
  *       201:
  *         description: Materia inserita
- *       409:
+ *       400:
  *         description: Esiste già una materia con questo nome
  *       500:
  *         description: Eccezione non gestita
@@ -338,7 +343,7 @@ app.post('/api/materia', (request, response) => {
     }
     catch (error){
         if (error.message.startsWith("UNIQUE constraint failed: ")){
-            response.status(409).json("Esiste già una materia con questo nome")
+            response.status(400).json("Esiste già una materia con questo nome")
         }
         else{
             response.status(500).json(error.name)
@@ -374,7 +379,7 @@ app.post('/api/materia', (request, response) => {
  *                  type: int
  *                  description: Nuovo valore Blue per definire un colore secondo il modello RGB
  *                  example: 34
- *               nome_attuale:
+ *               old_name:
  *                  type: string
  *                  description: Nome attuale della materia da modificare.
  *                  example: Ingegneria del software
@@ -382,8 +387,8 @@ app.post('/api/materia', (request, response) => {
  *       201:
  *         description: Materia inserita
  *       404:
- *         description: Materia non presente
- *       409:
+ *         description: Nessuna modifica ai parametri oppure la materia non esiste
+ *       400:
  *         description: Esista già una materia con questo nome
  *       500:
  *         description: Eccezione non gestita
@@ -391,28 +396,22 @@ app.post('/api/materia', (request, response) => {
 app.put('/api/materia', (request, response) => {
     let sql = "UPDATE materie SET name = ?, R = ?, G = ?, B = ? WHERE name = ?"
     try{
-        try{
-            let info = db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"]. request.body["nome_attuale"],);
-            if (info.changes == 0){
-                response.status(404).json("Materia non presente")
-            }
-            else{
-                response.json("Materia aggiornata")
-            }
+        let info = db.prepare(sql).run(request.body["nome"], request.body["R"], request.body["G"], request.body["B"], request.body["old_name"]);
+        if (info.changes == 0){
+            response.status(404).json("Nessuna modifica ai parametri oppure la materia non esiste")
         }
-        catch (error){
-            if (error.message.startsWith("UNIQUE constraint failed: ")){
-                response.status(409).json("Esiste già una materia con questo nome")
-            }
-            else{
-                console.log(error.message)
-                response.status(500).json("Eccezione non gestita")
-            }
+        else{
+            response.json("Materia aggiornata")
         }
     }
     catch (error){
-        console.log(error.message)
-        response.status(500).json(error.message)
+        if (error.message.startsWith("UNIQUE constraint failed: ")){
+            response.status(400).json("Esiste già una materia con questo nome")
+        }
+        else{
+            console.log(error.message, error)
+            response.status(500).json("Eccezione non gestita")
+        }
     }
 });
 
@@ -438,7 +437,7 @@ app.delete('/api/materia/:nome', (request, response) => {
     sql = "SELECT name FROM materie WHERE name = ?;"
     row = db.prepare(sql).get(request.params.nome)
     if (row == undefined)
-        response.status(404).send("Nessuna materia presente con il nome indicato")
+        response.status(404).json("Nessuna materia presente con il nome indicato")
     else{
         sql = "DELETE FROM materie WHERE name = ?"
         db.prepare(sql).run(request.params.name)
@@ -513,21 +512,14 @@ app.get('/api/catalogo/', (request, response) => {
  *         description: Catalogo inserito
  *       404:
  *         description: Nessuna materia presente con quel nome
- *       409:
+ *       400:
  *         description: Esiste già un catalogo con questo nome
  *       500:
  *         description: Eccezione non gestita
 */
 app.post('/api/catalogo', (request, response) => {
     let materia = request.body["materia"]
-    let sql = "SELECT name FROM materie"
-    let materie = db.prepare(sql).all()
-    let found = false
-    for (i = 0; i < Object.keys(materie).length && found == false; i++){
-        if (materia == materie[i].name){
-            found = true
-        }
-    }
+    let found = utils.is_subject(db, materia)
     if (!found){
         response.status(404).json("Nessuna materia presente con quel nome")
         return
@@ -539,7 +531,7 @@ app.post('/api/catalogo', (request, response) => {
     }
     catch (error){
         if (error.message.startsWith("UNIQUE constraint failed: ")){
-            response.status(409).json("Esiste già un catalogo con questo nome")
+            response.status(400).json("Esiste già un catalogo con questo nome")
         }
         else{
             console.log(error.message)
@@ -577,31 +569,24 @@ app.post('/api/catalogo', (request, response) => {
  *         description: Catalogo aggiornato
  *       404:
  *         description: Nessuna materia presente con quel nome<br />
- *                      Nessuna catalogo presente con quel nome
- *       409:
+ *                      Nessuna modifica ai parametri oppure il catalogo non esiste
+ *       400:
  *         description: Esiste già un catalogo con questo nome
  *       500:
  *         description: Eccezione non gestita
 */
 app.put('/api/catalogo', (request, response) => {
     let materia = request.body["materia"]
-    let sql = "SELECT name FROM materie"
-    let materie = db.prepare(sql).all()
-    let found = false
-    for (i = 0; i < Object.keys(materie).length && found == false; i++){
-        if (materia == materie[i].name){
-            found = true
-        }
-    }
+    let found = utils.is_subject(db, materia)
     if (!found){
-        response.status(404).send("Nessuna materia presente con quel nome")
+        response.status(404).json("Nessuna materia presente con quel nome")
         return
     }
     sql = "UPDATE cataloghi SET name = ?, materia = ? WHERE name = ?"
     try{
         let info = db.prepare(sql).run(request.body["nome"], materia, request.body["nome_attuale"]);
         if (info.changes == 0){
-            response.status(404).json("Nessun catalogo presente con quel nome")
+            response.status(404).json("Nessuna modifica ai parametri oppure il catalogo non esiste")
         }
         else{
             response.json("Catalogo aggiornato")
@@ -635,7 +620,7 @@ app.delete('/api/catalogo/:nome', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
     row = db.prepare(sql).get(request.params.nome)
     if (row == undefined)
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
     else{
         sql = "DELETE FROM cataloghi WHERE name = ?"
         db.prepare(sql).run(request.params.name)
@@ -694,16 +679,17 @@ app.delete('/api/catalogo/:nome', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
     row = db.prepare(sql).get(request.params.catalogo)
     if (row == undefined){
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
         return
     }
     sql = "SELECT * FROM note WHERE catalogo = ? ORDER BY id ASC"
     rows = db.prepare(sql).all(request.params.catalogo)
-    if (row == undefined || Object.keys(row).length == 0){
+    console.log(rows)
+    if (rows == undefined || Object.keys(rows).length == 0){
         response.status(404).json("Nessuna scheda presente nel catalogo")
     }
     else{
-        response.send(row)
+        response.json(rows)
     }
 })
 /**
@@ -735,9 +721,9 @@ app.delete('/api/catalogo/:nome', (request, response) => {
 */
 app.post('/api/nota', (request, response) => {
     sql = "SELECT name FROM cataloghi WHERE name = ?;"
-    row = db.prepare(sql).get(request.params.catalogo)
+    row = db.prepare(sql).get(request.body["catalogo"])
     if (row == undefined){
-        response.status(404).send("Nessun catalogo presente con il nome indicato")
+        response.status(404).json("Nessun catalogo presente con il nome indicato")
         return
     }
     sql = "SELECT id FROM note ORDER BY id DESC LIMIT 1;"
@@ -782,8 +768,8 @@ app.post('/api/nota', (request, response) => {
  *       201:
  *         description: Nota aggiornata
  *       404:
- *         description: Nessuna nota presente con quel nome
- *       409:
+ *         description: Nessuna modifica apportata oppure nessuna nota presente con quell'id nel catalogo indicato
+ *       400:
  *         description: Esiste già una nota con il nuovo nome
  *       500:
  *         description: Eccezione non gestita
@@ -793,7 +779,7 @@ app.put('/api/nota', (request, response) => {
     try{
         let info = db.prepare(sql).run(request.body["nome"], request.body["id"], request.body["catalogo"]);
         if (info.changes == 0){
-            response.status(404).json("Nessuna nota presente con quell'id nel catalogo indicato")
+            response.status(404).json("Nessuna modifica apportata oppure nessuna nota presente con quell'id nel catalogo indicato")
         }
         else{
             response.json("Nota aggiornata")
@@ -805,10 +791,9 @@ app.put('/api/nota', (request, response) => {
     }
 });
 
-// TODO FINIRE API nota
 /**
  * @swagger
- * /api/nota/{id}:
+ * /api/nota/{id}&{catalogo}:
  *   delete:
  *     summary: Rimuove una nota dal catalogo.
  *     parameters:
@@ -817,32 +802,130 @@ app.put('/api/nota', (request, response) => {
  *         schema:
  *             type: integer
  *         required: true
- *         description: id della scheda da rimuovere
+ *         description: id della nota da rimuovere
+ *       - in: path
+ *         name: catalogo
+ *         schema:
+ *             type: string
+ *         required: true
+ *         description: catalogo dal quale va rimossa la nota
  *     responses:
  *       200:
  *         description: Rimosso con successo
  *       404:
- *         description: Nessuna scheda presente con l'id indicato
+ *         description: Nel catalogo non è presente nessuna nota con l'id indicato
 */
-app.delete('/api/scheda/:id', (request, response) => {
-    sql = "SELECT percorso_immagine FROM schede WHERE id = ?;"
-    row = db.prepare(sql).get(request.params.id)
+app.delete('/api/nota/:id&:catalogo', (request, response) => {
+    sql = "SELECT id FROM note WHERE id = ? AND catalogo = ?"
+    row = db.prepare(sql).get(request.params.id, request.params.catalogo)
     if (row == undefined)
-        response.status(404).send("Nessuna scheda presente con l'id indicato")
-    sql = "DELETE FROM schede WHERE id = ?"
-    db.prepare(sql, function(err) {
-        if (err) {
-          console.log(err.message);
-        }
-      }).run(request.params.id)
-    response.json("Rimosso con successo");
+        response.status(404).json("Nel catalogo non è presente nessuna nota con l'id indicato")
+    else{
+        sql = "DELETE FROM note WHERE id = ?"
+        db.prepare(sql).run(request.params.id)
+        response.json("Rimosso con successo");
+    }
 })
 
+/**
+ * @swagger
+ * /api/evento:
+ *   get:
+ *     summary: Restituisce la lista degli eventi.
+ *     description: Restituisce una lista contenente tutti gli id degli eventi aggiunti tramite queste api, 
+ *                  mostrando solo il primo in caso di eventi con ripetizione.
+ *     responses:
+ *       200:
+ *         description: Una lista degli id degli eventi con la rispettiva materia.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Id dell'evento fornito dalle API di google.
+ *                         example: 5jqsnoaviltelt64lm5ptppsms
+ *                       materia:
+ *                         type: string
+ *                         description: Nome della materia associata.
+ *                         example: Ingegneria del software
+ *       404:
+ *         description: Nessun evento presente.
+ */
+app.get('/api/evento', (request, response) => {
+    sql = "SELECT * FROM eventi"
+    rows = db.prepare(sql).all()
+    if (rows == undefined || Object.keys(rows).length == 0){
+        response.status(404).json("Nessun evento presente")
+    }
+    else{
+        response.json(rows)
+    }
+});
 
-//API EVENTI
+/**
+ * @swagger
+ * /api/evento:
+ *   post:
+ *     summary: Aggiunge una evento al calendario di google.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               timezone:
+ *                  type: string
+ *                  description: La timezone da utilizzare per questo evento
+ *                  example: Europe/Rome
+ *               materia:
+ *                  type: string
+ *                  description: La materia da associare a questo evento
+ *                  example: Ingegneria del software
+ *               title:
+ *                  type: string
+ *                  description: Il titolo da utilizzare per questo evento
+ *                  example: Tutorato
+ *               description:
+ *                  type: string
+ *                  description: La descrizione dell'evento.
+ *                  example: Tutorato sugli argomenti della lezione
+ *               start:
+ *                  type: string
+ *                  description: L'orario di inizio dell'evento
+ *                  example: 2021-12-21T15:00:00Z
+ *               end:
+ *                  type: string
+ *                  description: L'orario di fine dell'evento
+ *                  example: 2021-12-21T16:30:00Z
+ *               frequency:
+ *                  type: string
+ *                  description: La frequenza con cui si deve ripetere l'evento in giorni
+ *                  example: 2
+ *     responses:
+ *       201:
+ *         description: Evento aggiunto con id x
+ *       404:
+ *         description: Nessun calendario presente<br />
+ *                      Nessuna materia presente con quel nome
+ *       500:
+ *         description: Credenziali non valide
+*/
 app.post('/api/evento', (request, response) => {
     timezone = request.body["timezone"]
     materia = request.body["materia"]
+    let found = utils.is_subject(db, materia)
+    if (!found && materia != undefined){
+        response.status(404).json("Nessuna materia presente con quel nome")
+        return
+    }
     var event = {
         summary: request.body["title"],
         description: request.body["description"],
@@ -858,15 +941,76 @@ app.post('/api/evento', (request, response) => {
       };
     var data = [event, db, materia, response]
     fs.readFile('credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err);
+        if (err){
+            response.status(500).json("Credenziali non valide")
+            return console.log('Error loading client secret file:', err);
+        }
         google_api.authorize(JSON.parse(content), data, google_api.insertEvent);
         });
 });
 
+/**
+ * @swagger
+ * /api/evento:
+ *   put:
+ *     summary: Aggiunge una evento al calendario di google.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                  type: string
+ *                  description: L'id dell'evento da modificare
+ *                  example: 5jqsnoaviltelt64lm5ptppsms
+ *               timezone:
+ *                  type: string
+ *                  description: La timezone da utilizzare per questo evento
+ *                  example: Europe/Rome
+ *               materia:
+ *                  type: string
+ *                  description: La materia da associare a questo evento
+ *                  example: Ingegneria del software
+ *               title:
+ *                  type: string
+ *                  description: Il titolo da utilizzare per questo evento
+ *                  example: Tutorato
+ *               description:
+ *                  type: string
+ *                  description: La descrizione dell'evento.
+ *                  example: Tutorato sugli argomenti della lezione
+ *               start:
+ *                  type: string
+ *                  description: L'orario di inizio dell'evento
+ *                  example: 2021-12-21T15:00:00Z
+ *               end:
+ *                  type: string
+ *                  description: L'orario di fine dell'evento
+ *                  example: 2021-12-21T16:30:00Z
+ *               frequency:
+ *                  type: string
+ *                  description: La frequenza con cui si deve ripetere l'evento in giorni
+ *                  example: 2
+ *     responses:
+ *       201:
+ *         description: Evento aggiunto con id x
+ *       404:
+ *         description: Nessun calendario presente<br />
+ *                      Nessuna materia presente con quel nome.
+ *       500:
+ *         description: Credenziali non valide
+*/
 app.put("/api/evento", (request, response) => {
     id = request.body["id"]
     timezone = request.body["timezone"]
     materia = request.body["materia"]
+    let found = utils.is_subject(db, materia)
+    if (!found && materia != undefined){
+        response.status(404).json("Nessuna materia presente con quel nome")
+        return
+    }
     var event = {
         summary: request.body["title"],
         description: request.body["description"],
@@ -882,17 +1026,44 @@ app.put("/api/evento", (request, response) => {
       };
     var data = [id, event, db, materia, response]
     fs.readFile('credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err);
+        if (err){
+            response.status(500).json("Credenziali non valide")
+            return console.log('Error loading client secret file:', err);
+        }
         google_api.authorize(JSON.parse(content), data, google_api.updateEvent);
         });
 });
 
+/**
+ * @swagger
+ * /api/evento/{id}:
+ *   delete:
+ *     summary: Rimuove un evento dal calendario.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *             type: integer
+ *         required: true
+ *         description: id della nota da rimuovere
+ *     responses:
+ *       200:
+ *         description: Rimosso con successo
+ *       404:
+ *         description: Non è presente nessun calendario
+ *       500:
+ *         description: Credenziali non valide
+*/
 app.delete("/api/evento/:id", (request, response) => {
     id = request.params.id
     data = [id, db, response]
     fs.readFile('credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err);
+        if (err){
+            response.status(500).json("Credenziali non valide")
+            return console.log('Error loading client secret file:', err);
+        }
         google_api.authorize(JSON.parse(content), data, google_api.deleteEvent);
         });
 });
 
+module.exports = app
