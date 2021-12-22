@@ -7,7 +7,7 @@
 		<p>
       In questo repository è contenuto lo scheletro del software <strong>UNITOSTUDY</strong>
       realizzato ai fini del progetto di Ingegneria del Software dal gruppo G40.(A. A. 2020/2021). 
-      In particolare sono stati sviluppati in front-end e le API relative all'applicazione. Per maggiori informazioni relative al progetto e alle sue funzionalità <a href= https://github.com/federicaamore/IDS/wiki">cliccare qui.</a></td></tr> (verrete reindirizzati alla Wiki del progetto).
+      In particolare sono stati sviluppati in front-end e le API relative all'applicazione. Per maggiori informazioni relative al progetto e alle sue funzionalità <a href= https://github.com/federicaamore/IDS/wiki>cliccare qui.</a></td></tr> (verrete reindirizzati alla Wiki del progetto).
         <br>
         <br>
     <h2><strong>Collaborazioni</strong></h2> 
