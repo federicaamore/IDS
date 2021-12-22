@@ -1048,7 +1048,7 @@ app.put("/api/evento", (request, response) => {
  *       - in: path
  *         name: id
  *         schema:
- *             type: integer
+ *             type: string
  *         required: true
  *         description: id della nota da rimuovere
  *     responses:
